@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Runs — Shop Monitor{% endblock %}
+
+{% block content %}
+<h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">
+    All Runs
+</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Scenario</th>
+            <th>Suite</th>
+            <th>Environment</th>
+            <th>Product</th>
+            <th>Status</th>
+            <th>Started</th>
+            <th>Duration</th>
+            <th>Alerts</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for run in runs %}
+        <tr>
+            <td class="mono">#{{ run.id }}</td>
+            <td>
+                <a href="/runs/{{ run.id }}" class="link">{{ run.scenario.name }}</a>
+            </td>
+            <td class="mono">{{ run.suite.name }}</td>
+            <td class="mono">{{ run.environment.name }}</td>
+            <td class="mono" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ run.product_name or '—' }}
+            </td>
+            <td>
+                <span class="status {{ run.status.value }}">{{ run.status.value }}</span>
+            </td>
+            <td class="mono">{{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td class="mono">{{ run.duration_seconds | duration }}</td>
+            <td>
+                {% set alert_count = run.alerts | selectattr('is_counted') | list | length %}
+                {% if alert_count > 0 %}
+                    <span class="alert-badge">{{ alert_count }}</span>
+                {% else %}
+                    <span class="mono">—</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

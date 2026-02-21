@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Shop Monitor{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-panel: #151515;
+            --bg-hover: #1f1f1f;
+            --text-primary: #e8e8e8;
+            --text-secondary: #888;
+            --border: #2a2a2a;
+            --accent-green: #00ff41;
+            --accent-red: #ff0055;
+            --accent-yellow: #ffdd00;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'IBM Plex Mono', 'Courier New', monospace;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        header {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        header h1 {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent-green);
+        }
+        
+        nav {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
+            transition: color 0.2s;
+        }
+        
+        nav a:hover,
+        nav a.active {
+            color: var(--text-primary);
+        }
+        
+        main {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+        }
+        
+        th {
+            background: var(--bg-dark);
+            color: var(--text-secondary);
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover td {
+            background: var(--bg-hover);
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .status.success {
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+        }
+        
+        .status.failed {
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+        }
+        
+        .status.running {
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        a.link {
+            color: var(--text-primary);
+            text-decoration: none;
+            border-bottom: 1px solid var(--border);
+            transition: border-color 0.2s;
+        }
+        
+        a.link:hover {
+            border-color: var(--accent-green);
+        }
+        
+        .mono {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-secondary);
+        }
+        
+        .alert-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background: var(--accent-red);
+            color: var(--bg-dark);
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 2px;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1>⬛ Shop Monitor</h1>
+        <nav>
+            <a href="/dashboard" {% if request.url.path == '/dashboard' %}class="active"{% endif %}>Dashboard</a>
+            <a href="/execute" {% if request.url.path == '/execute' %}class="active"{% endif %}>Run</a>
+            <a href="/suite-runs" {% if "/suite-runs" in request.url.path %}class="active"{% endif %}>Runs</a>
+            <a href="/scenarios" {% if "/scenarios" in request.url.path %}class="active"{% endif %}>Scenarios</a>
+            <a href="/alert-configs" {% if "/alert-configs" in request.url.path %}class="active"{% endif %}>Alert Configs</a>
+            <a href="/alerts" {% if "/alerts" in request.url.path %}class="active"{% endif %}>Alerts</a>
+            <a href="/runs" {% if '/runs' in request.url.path %}class="active"{% endif %}>Runs</a>
+        </nav>
+    </header>
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

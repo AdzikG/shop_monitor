@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Elektronika - laptop",
+    "listing_url": "https://www.amazon.pl/s?k=laptop",
+    "should_order": false,
+    "extra_params": {}
+  },
+  {
+    "name": "Ksiazki - python",
+    "listing_url": "https://www.amazon.pl/s?k=python+programming",
+    "should_order": false,
+    "extra_params": {}
+  }
+]

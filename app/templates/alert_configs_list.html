@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Alert Configurations — Shop Monitor{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
+        Alert Configurations
+    </h2>
+    <a href="/alert-configs/new" style="padding: 0.5rem 1rem; background: var(--accent-green); color: var(--bg-dark); text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
+        + New Alert Config
+    </a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Business Rule</th>
+            <th>Type</th>
+            <th>Schedule</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for config in configs %}
+        <tr>
+            <td>
+                <a href="/alert-configs/{{ config.id }}" class="link">{{ config.name }}</a>
+            </td>
+            <td class="mono" style="font-size: 11px;">{{ config.business_rule }}</td>
+            <td>
+                <span class="status" style="border-color: {{ config.alert_type.color }}; color: {{ config.alert_type.color }};">
+                    {{ config.alert_type.name }}
+                </span>
+            </td>
+            <td class="mono" style="font-size: 10px;">
+                {% if config.disabled_from_date %}
+                    {{ config.disabled_from_date }} - {{ config.disabled_to_date }}<br>
+                {% endif %}
+                {% if config.disabled_from_time %}
+                    {{ config.disabled_from_time.strftime('%H:%M') }} - {{ config.disabled_to_time.strftime('%H:%M') }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td>
+                {% if config.is_active and not config.is_disabled_now() %}
+                <span class="status success">active</span>
+                {% elif config.is_disabled_now() %}
+                <span class="status running">scheduled off</span>
+                {% else %}
+                <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">inactive</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="/alert-configs/{{ config.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.5rem;">Edit</a>
+                <a href="/alert-configs/{{ config.id }}" style="color: var(--accent-green); text-decoration: none; font-size: 11px;">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

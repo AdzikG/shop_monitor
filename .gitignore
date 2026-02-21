@@ -1,0 +1,51 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+logs/
+*.log
+
+# Results/outputs
+results/
+outputs/
+
+# Alembic
+alembic/versions/*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Playwright
+playwright/.auth/
+test-results/
+playwright-report/
+
+# Environment variables
+.env
+.env.local
+
+# Screenshots (jeśli zapisy testów)
+screenshots/
+videos/

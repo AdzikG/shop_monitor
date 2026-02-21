@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts — Shop Monitor{% endblock %}
+
+{% block extra_head %}
+<style>
+    .filter-bar {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        padding: 1rem;
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .filter-tab {
+        padding: 0.5rem 1rem;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.2s;
+    }
+    
+    .filter-tab:hover {
+        border-color: var(--accent-green);
+        color: var(--text-primary);
+    }
+    
+    .filter-tab.active {
+        background: var(--accent-green);
+        color: var(--bg-dark);
+        border-color: var(--accent-green);
+    }
+    
+    .search-box {
+        display: flex;
+        gap: 0.5rem;
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .search-box input {
+        flex: 1;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 0.5rem;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 12px;
+    }
+    
+    .search-box input:focus {
+        outline: none;
+        border-color: var(--accent-green);
+    }
+    
+    .search-box button {
+        padding: 0.5rem 1rem;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        cursor: pointer;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .search-box button:hover {
+        border-color: var(--accent-green);
+    }
+    
+    .status-button {
+        padding: 0.25rem 0.5rem;
+        font-size: 10px;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .status-button:hover {
+        border-color: var(--accent-green);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
+        Alerts
+    </h2>
+    <div style="display: flex; gap: 1rem; font-size: 11px;">
+        <span>Open: <strong style="color: var(--accent-red);">{{ total_open }}</strong></span>
+        <span>In Progress: <strong style="color: var(--accent-yellow);">{{ total_in_progress }}</strong></span>
+        <span>Closed: <strong style="color: var(--accent-green);">{{ total_closed }}</strong></span>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <div class="filter-tabs">
+        <a href="/alerts?status=active" class="filter-tab {% if current_status == 'active' %}active{% endif %}">
+            Active
+        </a>
+        <a href="/alerts?status=closed" class="filter-tab {% if current_status == 'closed' %}active{% endif %}">
+            Closed
+        </a>
+        <a href="/alerts?status=all" class="filter-tab {% if current_status == 'all' %}active{% endif %}">
+            All
+        </a>
+    </div>
+    
+    <form method="GET" action="/alerts" class="search-box">
+        <input type="hidden" name="status" value="{{ current_status }}">
+        <input type="text" name="search" placeholder="Search by rule or title..." value="{{ search_query }}">
+        <button type="submit">Search</button>
+    </form>
+</div>
+
+{% if alert_groups %}
+<table>
+    <thead>
+        <tr>
+            <th>Suite Run</th>
+            <th>Business Rule</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Count</th>
+            <th>Status</th>
+            <th>First Seen</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for group in alert_groups %}
+        <tr>
+            <td class="mono">
+                <a href="/suite-runs/{{ group.suite_run_id }}" class="link">#{{ group.suite_run_id }}</a>
+            </td>
+            <td class="mono" style="font-size: 10px;">{{ group.business_rule }}</td>
+            <td>{{ group.title }}</td>
+            <td>
+                <span class="status {{ 'failed' if group.alert_type == 'bug' else 'running' }}">
+                    {{ group.alert_type }}
+                </span>
+            </td>
+            <td class="mono">{{ group.occurrence_count }}x</td>
+            <td>
+                <span class="status {{ group.status.value }}">{{ group.status.value }}</span>
+            </td>
+            <td class="mono">{{ group.first_seen_at | local_time }}</td>
+            <td>
+                {% if group.status.value != 'closed' %}
+                <form method="POST" action="/alerts/{{ group.id }}/status" style="display: inline;">
+                    {% if group.status.value == 'open' %}
+                    <button type="submit" name="new_status" value="in_progress" class="status-button">
+                        Start
+                    </button>
+                    {% endif %}
+                    <button type="submit" name="new_status" value="closed" class="status-button">
+                        Close
+                    </button>
+                </form>
+                {% else %}
+                <span class="mono" style="font-size: 10px; color: var(--text-secondary);">—</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--text-secondary);">
+    No alerts found
+</div>
+{% endif %}
+{% endblock %}

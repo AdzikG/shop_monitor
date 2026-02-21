@@ -1,0 +1,42 @@
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Suite</th>
+            <th>Environment</th>
+            <th>Status</th>
+            <th>Scenarios</th>
+            <th>Started</th>
+            <th>Duration</th>
+            <th>Alerts</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for run in recent_runs %}
+        <tr>
+            <td class="mono">#{{ run.id }}</td>
+            <td>
+                <a href="/suite-runs/{{ run.id }}" class="link">{{ run.suite.name }}</a>
+            </td>
+            <td class="mono">{{ run.environment.name }}</td>
+            <td>
+                <span class="status {{ run.status.value }}">{{ run.status.value }}</span>
+            </td>
+            <td class="mono">
+                <span style="color: var(--accent-green);">{{ run.success_scenarios }}</span> /
+                <span style="color: var(--accent-red);">{{ run.failed_scenarios }}</span> /
+                <span style="color: var(--text-secondary);">{{ run.total_scenarios }}</span>
+            </td>
+            <td class="mono">{{ run.started_at | local_time }}</td>
+            <td class="mono">{{ run.duration_seconds | duration }}</td>
+            <td>
+                {% if run.total_alerts > 0 %}
+                    <span class="alert-badge">{{ run.total_alerts }}</span>
+                {% else %}
+                    <span class="mono">—</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

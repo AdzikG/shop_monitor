@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Shop Monitor{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Suite Runs</div>
+        <div class="stat-value">{{ total_runs }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Failed/Partial Runs</div>
+        <div class="stat-value" style="color: var(--accent-red);">{{ failed_runs }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Total Alerts</div>
+        <div class="stat-value" style="color: var(--accent-yellow);">{{ total_alerts }}</div>
+    </div>
+</div>
+
+<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
+    Recent Suite Runs
+    <span style="font-size: 10px; color: var(--text-secondary); font-weight: normal; margin-left: 1rem;">
+        Auto-refresh: 15s
+    </span>
+</h2>
+
+<div id="runs-table-container" hx-get="/dashboard/runs-table" hx-trigger="load, every 15s" hx-swap="innerHTML">
+    {% include 'dashboard_runs_table.html' %}
+</div>
+{% endblock %}

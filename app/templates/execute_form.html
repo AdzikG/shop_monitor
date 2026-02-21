@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Run Suite — Shop Monitor{% endblock %}
+
+{% block extra_head %}
+<style>
+    form {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        padding: 2rem;
+        max-width: 600px;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    label {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    select, input[type="number"] {
+        width: 100%;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 0.75rem;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 13px;
+    }
+    
+    select:focus, input:focus {
+        outline: none;
+        border-color: var(--accent-green);
+    }
+    
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    input[type="checkbox"] {
+        width: auto;
+    }
+    
+    button {
+        background: var(--accent-green);
+        color: var(--bg-dark);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    
+    button:hover {
+        opacity: 0.8;
+    }
+    
+    button:active {
+        opacity: 0.6;
+    }
+    
+    .info {
+        background: var(--bg-dark);
+        border-left: 2px solid var(--accent-yellow);
+        padding: 1rem;
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">
+    Run Suite
+</h2>
+
+<form method="POST" action="/execute">
+    <div class="form-group">
+        <label for="suite_id">Suite</label>
+        <select name="suite_id" id="suite_id" required>
+            <option value="">Select suite...</option>
+            {% for suite in suites %}
+            <option value="{{ suite.id }}">{{ suite.name }} ({{ suite.workers }} workers)</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="environment_id">Environment</label>
+        <select name="environment_id" id="environment_id" required>
+            <option value="">Select environment...</option>
+            {% for env in environments %}
+            <option value="{{ env.id }}">{{ env.name }} — {{ env.base_url }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="workers_override">Workers Override (optional)</label>
+        <input type="number" name="workers_override" id="workers_override" min="1" max="10" 
+               placeholder="Leave empty to use suite default">
+    </div>
+    
+    <div class="form-group">
+        <div class="checkbox-group">
+            <input type="checkbox" name="headless" id="headless" value="true">
+            <label for="headless" style="margin: 0; text-transform: none;">Run headless (no browser window)</label>
+        </div>
+    </div>
+    
+    <button type="submit">▶ Run Suite</button>
+    
+    <div class="info">
+        Suite will run in the background. You will be redirected to Runs page where you can see results as they complete.
+        Refresh the page to see new runs appear.
+    </div>
+</form>
+{% endblock %}

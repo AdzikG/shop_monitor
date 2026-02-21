@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Suite Run #{{ suite_run.id }} — Shop Monitor{% endblock %}
+
+{% block extra_head %}
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        width: 90%;
+        max-width: 1200px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .modal-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-body {
+        padding: 0;
+        overflow-y: auto;
+        flex: 1;
+    }
+    
+    .close {
+        font-size: 28px;
+        font-weight: bold;
+        color: var(--text-secondary);
+        cursor: pointer;
+        line-height: 1;
+    }
+    
+    .close:hover {
+        color: var(--accent-red);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <a href="/suite-runs" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Back to suite runs</a>
+</div>
+
+<div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+        <h1 style="font-size: 18px;">{{ suite_run.suite.name }} @ {{ suite_run.environment.name }}</h1>
+        <button onclick="showLogs()" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-size: 11px; text-transform: uppercase;">
+            Show Logs
+        </button>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; font-size: 12px;">
+        <div>
+            <div class="stat-label">Suite Run ID</div>
+            <div class="mono">#{{ suite_run.id }}</div>
+        </div>
+        <div>
+            <div class="stat-label">Status</div>
+            <span class="status {{ suite_run.status.value }}">{{ suite_run.status.value }}</span>
+        </div>
+        <div>
+            <div class="stat-label">Started</div>
+            <div class="mono">{{ suite_run.started_at | local_time }}</div>
+        </div>
+        <div>
+            <div class="stat-label">Duration</div>
+            <div class="mono">{{ suite_run.duration_seconds | duration }}</div>
+        </div>
+        <div>
+            <div class="stat-label">Success / Failed / Total</div>
+            <div class="mono">
+                <span style="color: var(--accent-green);">{{ suite_run.success_scenarios }}</span> /
+                <span style="color: var(--accent-red);">{{ suite_run.failed_scenarios }}</span> /
+                {{ suite_run.total_scenarios }}
+            </div>
+        </div>
+        <div>
+            <div class="stat-label">Total Alerts</div>
+            <div class="mono">{{ suite_run.total_alerts }}</div>
+        </div>
+    </div>
+</div>
+
+{% if alert_groups %}
+<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
+    Alert Groups ({{ alert_groups | length }})
+</h2>
+
+<table style="margin-bottom: 2rem;">
+    <thead>
+        <tr>
+            <th>Business Rule</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Count</th>
+            <th>Scenarios</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for group in alert_groups %}
+        <tr>
+            <td class="mono" style="font-size: 11px;">{{ group.business_rule }}</td>
+            <td>{{ group.title }}</td>
+            <td>
+                <span class="status {{ 'failed' if group.alert_type == 'bug' else 'running' }}">
+                    {{ group.alert_type }}
+                </span>
+            </td>
+            <td class="mono">{{ group.occurrence_count }}x</td>
+            <td style="font-size: 11px;">
+                {% for sid in group.scenario_ids %}
+                    <a href="/scenarios/{{ sid }}" class="link" style="margin-right: 0.5rem;">#{{ sid }}</a>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
+    Scenario Runs ({{ scenario_runs | length }})
+</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Scenario</th>
+            <th>Product</th>
+            <th>Status</th>
+            <th>Started</th>
+            <th>Duration</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for run in scenario_runs %}
+        <tr>
+            <td class="mono">#{{ run.id }}</td>
+            <td>
+                <a href="/scenarios/{{ run.scenario_id }}" class="link">{{ run.scenario.name }}</a>
+            </td>
+            <td class="mono" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ run.product_name or '—' }}
+            </td>
+            <td>
+                <span class="status {{ run.status.value }}">{{ run.status.value }}</span>
+            </td>
+            <td class="mono">{{ run.started_at | local_time }}</td>
+            <td class="mono">{{ run.duration_seconds | duration }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Modal Logs -->
+<div id="logsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
+                Suite Run #{{ suite_run.id }} Logs
+            </h3>
+            <span class="close" onclick="closeLogs()">&times;</span>
+        </div>
+        <div class="modal-body" id="logsContent">
+            <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showLogs() {
+        const modal = document.getElementById('logsModal');
+        modal.classList.add('show');
+        
+        // Załaduj logi przez HTMX
+        htmx.ajax('GET', '/suite-runs/{{ suite_run.id }}/logs', {
+            target: '#logsContent',
+            swap: 'innerHTML'
+        });
+    }
+    
+    function closeLogs() {
+        const modal = document.getElementById('logsModal');
+        modal.classList.remove('show');
+    }
+    
+    // Zamknij modal przy kliknięciu poza nim
+    window.onclick = function(event) {
+        const modal = document.getElementById('logsModal');
+        if (event.target === modal) {
+            closeLogs();
+        }
+    }
+</script>
+{% endblock %}
