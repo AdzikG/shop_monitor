@@ -126,7 +126,7 @@ async def alert_config_update(
     
     db.commit()
     
-    return RedirectResponse(url=f"/alert-configs/{config_id}", status_code=303)
+    return RedirectResponse(url=f"/alert-configs", status_code=303)
 
 
 @router.post("/alert-configs/{config_id}/delete")
