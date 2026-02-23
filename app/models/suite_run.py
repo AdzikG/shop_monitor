@@ -44,7 +44,8 @@ class SuiteRun(Base):
         back_populates="suite_run", cascade="all, delete-orphan"
     )
     alert_groups: Mapped[list["AlertGroup"]] = relationship(
-        back_populates="suite_run", cascade="all, delete-orphan"
+        back_populates="last_suite_run",  # ← POPRAWNE
+        foreign_keys="AlertGroup.last_suite_run_id"
     )
 
     @property

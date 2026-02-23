@@ -6,6 +6,7 @@ import asyncio
 import logging
 import sys
 import traceback
+import json
 from datetime import datetime, timezone
 from collections import defaultdict
 from pathlib import Path
@@ -49,8 +50,6 @@ class SuiteExecutor:
         self.db.refresh(suite_run)
         
         self.suite_run_id = suite_run.id
-
-        # Skonfiguruj logger dla tego suite run
         self._setup_logging()
 
         logger.info(f"\n{'='*60}")
@@ -92,12 +91,8 @@ class SuiteExecutor:
                     return result
                     
                 except Exception as e:
-                    # Loguj krótko do structured log
                     logger.error(f"Blad w scenariuszu {scenario.name}: {e}")
-                    
-                    # Zapisz pełny traceback do raw log
                     self._write_raw_traceback(scenario.name, e)
-                    
                     return {'scenario_id': scenario.id, 'status': 'failed', 'alerts': []}
                 finally:
                     db_session.close()
@@ -105,7 +100,6 @@ class SuiteExecutor:
         tasks = [run_with_limit(s) for s in self.scenarios]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Loguj exceptions które przeszły przez gather
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 logger.error(f"Exception w scenariuszu {self.scenarios[i].name}: {result}")
@@ -113,7 +107,6 @@ class SuiteExecutor:
 
         self._finalize_suite_run(suite_run, results)
         
-        # Usuń handler po zakończeniu
         if self.log_handler:
             logging.getLogger().removeHandler(self.log_handler)
             self.log_handler.close()
@@ -126,11 +119,9 @@ class SuiteExecutor:
             return
         
         try:
-            # Sformatuj traceback jako string
             tb_lines = traceback.format_exception(type(exception), exception, exception.__traceback__)
             tb_text = ''.join(tb_lines)
             
-            # Zapisz bezpośrednio z prawdziwymi \n
             with open(self.log_file, 'a', encoding='utf-8', newline='') as f:
                 f.write('=' * 80 + '\n')
                 f.write(f'ERROR in scenario: {scenario_name}\n')
@@ -149,18 +140,16 @@ class SuiteExecutor:
         
         self.log_file = log_dir / f"suite_run_{self.suite_run_id}.log"
         
-        # Dodaj file handler
         self.log_handler = logging.FileHandler(self.log_file, encoding='utf-8')
         self.log_handler.setLevel(logging.DEBUG)
         
         formatter = logging.Formatter('%(asctime)s | %(levelname)-8s | %(message)s', datefmt='%H:%M:%S')
         self.log_handler.setFormatter(formatter)
         
-        # Dodaj do root logger
         logging.getLogger().addHandler(self.log_handler)
 
     def _finalize_suite_run(self, suite_run: SuiteRun, results: list):
-        """Agreguje wyniki scenariuszy i tworzy alert_groups."""
+        """Agreguje wyniki scenariuszy i tworzy/aktualizuje alert_groups Z DEDUPLIKACJĄ."""
         
         success = 0
         failed = 0
@@ -174,6 +163,7 @@ class SuiteExecutor:
             else:
                 failed += 1
         
+        # Zbierz alerty pogrupowane po business_rule
         alert_groups_data = defaultdict(lambda: {
             'business_rule': '',
             'alert_type': '',
@@ -198,18 +188,74 @@ class SuiteExecutor:
                 group['scenario_ids'].append(result['scenario_id'])
                 group['count'] += 1
         
+        # INTELIGENTNA DEDUPLIKACJA — sprawdź czy alert już istnieje
         total_alerts = 0
+        
         for group_data in alert_groups_data.values():
-            alert_group = AlertGroup(
-                suite_run_id=suite_run.id,
-                business_rule=group_data['business_rule'],
-                alert_type=group_data['alert_type'],
-                title=group_data['title'],
-                occurrence_count=group_data['count'],
-                scenario_ids=str(group_data['scenario_ids']),
-                status=AlertStatus.OPEN,
+            scenario_ids_sorted = sorted(group_data['scenario_ids'])
+            scenario_ids_json = json.dumps(scenario_ids_sorted)
+            
+            # Pobierz wszystkie potencjalnie pasujące alert groups
+            candidates = (
+                self.db.query(AlertGroup)
+                .join(SuiteRun, AlertGroup.last_suite_run_id == SuiteRun.id)
+                .filter(
+                    AlertGroup.business_rule == group_data['business_rule'],
+                    AlertGroup.status.in_([AlertStatus.OPEN, AlertStatus.IN_PROGRESS]),
+                    SuiteRun.environment_id == suite_run.environment_id
+                )
+                .all()
             )
-            self.db.add(alert_group)
+
+            # Sprawdź ręcznie czy scenario_ids się zgadzają
+            existing = None
+            for candidate in candidates:
+                try:
+                    existing_ids = set(json.loads(candidate.scenario_ids))
+                    new_ids = set(scenario_ids_sorted)
+                    
+                    # Sprawdź czy nowe IDs są podzbiorem istniejących
+                    if new_ids.issubset(existing_ids) or existing_ids.issubset(new_ids):
+                        existing = candidate
+                        break
+                except:
+                    continue
+            
+            if existing:
+                # Aktualizuj istniejący alert — POWTÓRZYŁ SIĘ!
+                existing.repeat_count += 1
+                existing.last_seen_at = datetime.now(timezone.utc)
+                existing.last_suite_run_id = suite_run.id
+                existing.occurrence_count = group_data['count']
+                
+                # Dodaj do historii
+                try:
+                    history = json.loads(existing.suite_run_history) if existing.suite_run_history else []
+                except:
+                    history = []
+                history.append(suite_run.id)
+                existing.suite_run_history = json.dumps(history)
+                
+                logger.info(f"Alert {existing.business_rule} powtórzył się (repeat: {existing.repeat_count}x)")
+            else:
+                # Nowy alert group
+                history = [suite_run.id]
+                alert_group = AlertGroup(
+                    last_suite_run_id=suite_run.id,
+                    suite_run_history=json.dumps(history),
+                    business_rule=group_data['business_rule'],
+                    alert_type=group_data['alert_type'],
+                    title=group_data['title'],
+                    occurrence_count=group_data['count'],
+                    scenario_ids=scenario_ids_json,
+                    repeat_count=1,
+                    status=AlertStatus.OPEN,
+                    first_seen_at=datetime.now(timezone.utc),
+                    last_seen_at=datetime.now(timezone.utc),
+                )
+                self.db.add(alert_group)
+                logger.info(f"Nowy alert: {alert_group.business_rule}")
+            
             total_alerts += group_data['count']
         
         suite_run.success_scenarios = success

@@ -26,3 +26,13 @@ def local_time(dt):
 # Rejestracja filtrow
 templates.env.filters["duration"] = duration
 templates.env.filters["local_time"] = local_time
+
+def parse_json(value):
+    """Parsuje JSON string do Python object."""
+    import json
+    try:
+        return json.loads(value) if value else []
+    except:
+        return []
+
+templates.env.filters["parse_json"] = parse_json

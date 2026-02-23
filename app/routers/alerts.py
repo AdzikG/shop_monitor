@@ -2,9 +2,12 @@ from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_
+import json
 
 from database import get_db
 from app.models.alert_group import AlertGroup, AlertStatus
+from app.models.suite_run import SuiteRun
+from app.models.environment import Environment
 from app.templates import templates
 
 router = APIRouter(tags=["alerts"])
@@ -13,26 +16,32 @@ router = APIRouter(tags=["alerts"])
 @router.get("/alerts")
 async def alerts_list(
     request: Request,
-    status: str = "active",  # active (open+in_progress) / closed / all
+    status: str = "active",
+    environment_id: str = "all",
     search: str = "",
     db: Session = Depends(get_db)
 ):
     """
-    Lista alertow z filtrowaniem i wyszukiwaniem.
+    Lista alertow z filtrowaniem.
     
-    Parametry:
-        status: active (open + in_progress) | closed | all
-        search: szukaj po business_rule lub title
+    Nowa logika: alerty deduplikują się jeśli powtarzają w kolejnych runach.
     """
     
-    query = db.query(AlertGroup).order_by(desc(AlertGroup.first_seen_at))
+    query = (
+        db.query(AlertGroup)
+        .join(SuiteRun, AlertGroup.last_suite_run_id == SuiteRun.id)
+        .order_by(desc(AlertGroup.last_seen_at))
+    )
     
     # Filtr statusu
     if status == "active":
         query = query.filter(AlertGroup.status.in_([AlertStatus.OPEN, AlertStatus.IN_PROGRESS]))
     elif status == "closed":
         query = query.filter(AlertGroup.status == AlertStatus.CLOSED)
-    # "all" — bez filtra
+    
+    # Filtr środowiska
+    if environment_id != "all":
+        query = query.filter(SuiteRun.environment_id == int(environment_id))
     
     # Wyszukiwanie
     if search:
@@ -50,14 +59,19 @@ async def alerts_list(
     total_in_progress = db.query(AlertGroup).filter(AlertGroup.status == AlertStatus.IN_PROGRESS).count()
     total_closed = db.query(AlertGroup).filter(AlertGroup.status == AlertStatus.CLOSED).count()
     
+    # Lista środowisk dla filtra
+    environments = db.query(Environment).filter_by(is_active=True).all()
+    
     return templates.TemplateResponse("alerts_list.html", {
         "request": request,
         "alert_groups": alert_groups,
         "current_status": status,
+        "current_environment": environment_id,
         "search_query": search,
         "total_open": total_open,
         "total_in_progress": total_in_progress,
         "total_closed": total_closed,
+        "environments": environments,
     })
 
 
@@ -68,7 +82,7 @@ async def update_alert_status(
     notes: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    """Zmienia status alertu (open -> in_progress -> closed)."""
+    """Zmienia status alertu."""
     
     alert_group = db.query(AlertGroup).filter(AlertGroup.id == alert_group_id).first()
     if not alert_group:

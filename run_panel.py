@@ -25,4 +25,4 @@ if __name__ == "__main__":
     print(f"Starting Shop Monitor panel at http://{host}:{port}")
     print("Press Ctrl+C to stop")
     
-    uvicorn.run("app.main:app", host=host, port=port, reload=True)
+    uvicorn.run("app.main:app", host=host, port=port, reload=False)

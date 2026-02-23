@@ -1,8 +1,8 @@
-"""initial schema with alert types
+"""initial_schema
 
-Revision ID: 2170c271d938
+Revision ID: 130d270a3155
 Revises: 
-Create Date: 2026-02-21 09:29:43.155384
+Create Date: 2026-02-23 18:08:09.630005
 
 """
 from typing import Sequence, Union
@@ -10,7 +10,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision: str = '2170c271d938'
+revision: str = '130d270a3155'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -123,21 +123,24 @@ def upgrade() -> None:
     )
     op.create_table('alert_groups',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('suite_run_id', sa.Integer(), nullable=False),
+    sa.Column('last_suite_run_id', sa.Integer(), nullable=False),
+    sa.Column('suite_run_history', sa.JSON(), nullable=False),
     sa.Column('business_rule', sa.String(length=255), nullable=False),
     sa.Column('alert_type', sa.String(length=50), nullable=False),
     sa.Column('title', sa.String(length=255), nullable=False),
-    sa.Column('status', sa.Enum('OPEN', 'IN_PROGRESS', 'CLOSED', name='alertstatus'), nullable=False),
     sa.Column('occurrence_count', sa.Integer(), nullable=False),
     sa.Column('scenario_ids', sa.Text(), nullable=False),
+    sa.Column('repeat_count', sa.Integer(), nullable=False),
+    sa.Column('status', sa.Enum('OPEN', 'IN_PROGRESS', 'CLOSED', name='alertstatus', native_enum=False, length=20), nullable=False),
     sa.Column('first_seen_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('last_seen_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('closed_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('closed_by', sa.String(length=100), nullable=True),
-    sa.ForeignKeyConstraint(['suite_run_id'], ['suite_runs.id'], ),
+    sa.ForeignKeyConstraint(['last_suite_run_id'], ['suite_runs.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_alert_groups_business_rule'), 'alert_groups', ['business_rule'], unique=False)
     op.create_table('scenario_runs',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('suite_run_id', sa.Integer(), nullable=False),
@@ -205,6 +208,7 @@ def downgrade() -> None:
     op.drop_table('api_errors')
     op.drop_table('alerts')
     op.drop_table('scenario_runs')
+    op.drop_index(op.f('ix_alert_groups_business_rule'), table_name='alert_groups')
     op.drop_table('alert_groups')
     op.drop_table('suite_scenarios')
     op.drop_table('suite_runs')

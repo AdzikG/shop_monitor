@@ -1,86 +1,94 @@
 """
-Czysci baze z runow i alertow, zostawia scenariusze/suite/environments.
+Clean Runs — usuwa wszystkie runy zachowując konfigurację.
 
-Uzycie:
-    python clean_runs.py
+Usuwa:
+- suite_runs, scenario_runs, alerts, alert_groups
+- basket_snapshots, api_errors
+- logi z katalogu logs/
+
+Zachowuje:
+- suites, scenarios, environments, suite_scenarios, suite_environments
+- alert_configs, alert_types
+
+Użycie:
+    python clean_runs.py              # interaktywne potwierdzenie
+    python clean_runs.py --force      # bez pytania
+    python clean_runs.py --keep-logs  # nie usuwaj logów
 """
 
+import sys
+from pathlib import Path
 from database import SessionLocal
-from app.models.suite_run import SuiteRun
-from app.models.run import ScenarioRun
-from app.models.alert import Alert
-from app.models.alert_group import AlertGroup
 from app.models.basket_snapshot import BasketSnapshot
 from app.models.api_error import ApiError
+from app.models.alert import Alert
+from app.models.alert_group import AlertGroup
+from app.models.run import ScenarioRun
+from app.models.suite_run import SuiteRun
 
 
-def clean_runs():
+def clean_runs(force: bool = False, keep_logs: bool = False):
+    """Usuwa wszystkie runy zachowując konfigurację."""
+    
     db = SessionLocal()
     
-    print("Czyszczenie bazy...")
-    print()
-    
-    try:
-        # Zlicz przed usunieciem
-        suite_runs_count = db.query(SuiteRun).count()
-        scenario_runs_count = db.query(ScenarioRun).count()
-        alerts_count = db.query(Alert).count()
-        alert_groups_count = db.query(AlertGroup).count()
-        snapshots_count = db.query(BasketSnapshot).count()
-        api_errors_count = db.query(ApiError).count()
-        
-        print(f"Do usuniecia:")
-        print(f"  Suite runs:       {suite_runs_count}")
-        print(f"  Scenario runs:    {scenario_runs_count}")
-        print(f"  Alerts:           {alerts_count}")
-        print(f"  Alert groups:     {alert_groups_count}")
-        print(f"  Basket snapshots: {snapshots_count}")
-        print(f"  API errors:       {api_errors_count}")
-        print()
-        
-        if suite_runs_count == 0 and scenario_runs_count == 0:
-            print("Baza juz czysta!")
-            return
-        
-        # Potwierdz
-        confirm = input("Czy na pewno usunac? (tak/nie): ")
-        if confirm.lower() != "tak":
+    # Potwierdzenie
+    if not force:
+        print("⚠️  UWAGA: To usunie wszystkie runy (dane testów) ale zachowa konfigurację!")
+        confirm = input("Czy kontynuować? (yes/no): ")
+        if confirm.lower() not in ['yes', 'y']:
             print("Anulowano.")
             return
+    
+    try:
+        print("\n🗑️  Usuwanie runów...")
         
-        print()
-        print("Usuwam...")
+        # Kolejność ważna — od zależnych do głównych
+        counts = {}
         
-        # Usun w kolejnosci (od zaleznych do glownych)
-        # 1. Basket snapshots i API errors (zaleza od scenario_runs)
-        db.query(BasketSnapshot).delete()
-        db.query(ApiError).delete()
+        # 1. Zależności scenario_runs
+        counts['basket_snapshots'] = db.query(BasketSnapshot).delete()
+        counts['api_errors'] = db.query(ApiError).delete()
+        counts['alerts'] = db.query(Alert).delete()
         
-        # 2. Alerts (zaleza od scenario_runs)
-        db.query(Alert).delete()
+        # 2. Zależności suite_runs
+        counts['alert_groups'] = db.query(AlertGroup).delete()
         
-        # 3. Alert groups (zaleza od suite_runs)
-        db.query(AlertGroup).delete()
-        
-        # 4. Scenario runs (zaleza od suite_runs)
-        db.query(ScenarioRun).delete()
-        
-        # 5. Suite runs (glowne)
-        db.query(SuiteRun).delete()
+        # 3. Główne tabele
+        counts['scenario_runs'] = db.query(ScenarioRun).delete()
+        counts['suite_runs'] = db.query(SuiteRun).delete()
         
         db.commit()
         
-        print()
-        print("Gotowe! Baza wyczyszczona.")
-        print("Scenariusze, suite i environments zostaly zachowane.")
+        print("\n📊 Usunięte rekordy:")
+        for table, count in counts.items():
+            print(f"   {table}: {count}")
+        
+        # Usuń logi
+        if not keep_logs:
+            logs_dir = Path("logs")
+            if logs_dir.exists():
+                log_files = list(logs_dir.glob("*.log"))
+                for log_file in log_files:
+                    log_file.unlink()
+                print(f"\n🗑️  Usunięto {len(log_files)} plików logów")
+        
+        print("\n✅ Runy wyczyszczone!")
+        print("\nZachowano:")
+        print("  • Suites, Scenarios, Environments")
+        print("  • Alert Configs, Alert Types")
+        print("  • Wszystkie konfiguracje")
         
     except Exception as e:
         db.rollback()
-        print(f"Blad: {e}")
+        print(f"\n❌ Błąd: {e}")
         raise
     finally:
         db.close()
 
 
 if __name__ == "__main__":
-    clean_runs()
+    force = "--force" in sys.argv or "-f" in sys.argv
+    keep_logs = "--keep-logs" in sys.argv
+    
+    clean_runs(force=force, keep_logs=keep_logs)
