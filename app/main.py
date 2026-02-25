@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-
-from app.routers import dashboard, suite_runs, alerts, execute, scenarios, alert_configs, suites
+from app.routers import dashboard, suite_runs, alerts, execute, scenarios, alert_configs, suites, auth_router
 
 app = FastAPI(title="Shop Monitor")
 
@@ -9,6 +8,7 @@ app = FastAPI(title="Shop Monitor")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Routery
+app.include_router(auth_router.router)
 app.include_router(dashboard.router)
 app.include_router(suite_runs.router)
 app.include_router(alerts.router)
