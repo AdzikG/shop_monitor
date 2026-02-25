@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Alert #{{ alert.id }} — Shop Monitor{% endblock %}
+
+{% block extra_head %}
+<style>
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .detail-card {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        padding: 1.25rem;
+    }
+
+    .detail-card .label {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        letter-spacing: 1px;
+        margin-bottom: 0.4rem;
+    }
+
+    .detail-card .value {
+        font-size: 13px;
+    }
+
+    .resolution-badge {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 2px;
+        border: 1px solid;
+    }
+
+    .resolution-badge.bug           { color: #ff6b6b; border-color: #ff6b6b; }
+    .resolution-badge.nab           { color: var(--text-secondary); border-color: var(--border); }
+    .resolution-badge.cant_reproduce { color: #ffd93d; border-color: #ffd93d; }
+    .resolution-badge.duplicate     { color: #74b9ff; border-color: #74b9ff; }
+    .resolution-badge.needs_dev     { color: #fd79a8; border-color: #fd79a8; }
+    .resolution-badge.config        { color: #fdcb6e; border-color: #fdcb6e; }
+    .resolution-badge.script_fix    { color: #a29bfe; border-color: #a29bfe; }
+    .resolution-badge.scenario_fix  { color: #55efc4; border-color: #55efc4; }
+
+    .status.awaiting_fix          { background: #fd79a8; color: var(--bg-dark); }
+    .status.awaiting_test_update  { background: #a29bfe; color: var(--bg-dark); }
+
+    .history-table td { font-size: 12px; }
+
+    .first-seen-marker {
+        font-size: 10px;
+        color: var(--accent-green);
+        margin-left: 0.5rem;
+    }
+
+    .note-box {
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent-yellow);
+        padding: 0.75rem 1rem;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    .parent-box {
+        background: var(--bg-dark);
+        border: 1px solid #74b9ff;
+        padding: 0.75rem 1rem;
+        font-size: 12px;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+    <a href="/alerts" style="color: var(--text-secondary); font-size: 12px; text-decoration: none;">← Alerty</a>
+    <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
+        Alert #{{ alert.id }}
+    </h2>
+    <span class="status {{ alert.status.value }}">{{ alert.status.value.replace('_', ' ') }}</span>
+    {% if alert.resolution_type %}
+    <span class="resolution-badge {{ alert.resolution_type }}">
+        {{ alert.resolution_type.replace('_', ' ').upper() }}
+    </span>
+    {% endif %}
+</div>
+
+{# Notatka / resolution note #}
+{% if alert.resolution_note %}
+<div class="note-box">
+    📝 {{ alert.resolution_note }}
+</div>
+{% endif %}
+
+{# Parent (jeśli duplikat) #}
+{% if parent %}
+<div class="parent-box">
+    🔗 Duplikat alertu
+    <a href="/alerts/{{ parent.id }}" class="link" style="color: #74b9ff;">#{{ parent.id }} — {{ parent.title }}</a>
+    <span style="color: var(--text-secondary); margin-left: 0.5rem;">
+        ({{ parent.status.value.replace('_', ' ') }}
+        {% if parent.resolution_type %}, {{ parent.resolution_type }}{% endif %})
+    </span>
+</div>
+{% endif %}
+
+{# Detail grid #}
+<div class="detail-grid">
+    <div class="detail-card">
+        <div class="label">Tytuł</div>
+        <div class="value" style="font-weight: 600;">{{ alert.title }}</div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Business Rule</div>
+        <div class="value mono" style="font-size: 12px;">{{ alert.business_rule }}</div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Środowisko</div>
+        <div class="value mono">{{ alert.last_suite_run.environment.name }}</div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Alert Type</div>
+        <div class="value">{{ alert.alert_type }}</div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Pierwsze wystąpienie</div>
+        <div class="value mono" style="font-size: 12px;">{{ alert.first_seen_at | local_time }}</div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Ostatnie wystąpienie</div>
+        <div class="value mono" style="font-size: 12px;">{{ alert.last_seen_at | local_time }}</div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Powtórzenia</div>
+        <div class="value" style="font-size: 20px; color: var(--accent-red);">×{{ alert.repeat_count }}</div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Czyste runy (bez alertu)</div>
+        <div class="value" style="font-size: 20px; color: var(--accent-green);">{{ alert.clean_runs_count }}</div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Weryfikuje</div>
+        <div class="value">
+            {% if alert.assigned_to %}
+                👤 {{ alert.assigned_to }}
+                <span class="mono" style="font-size: 11px; color: var(--text-secondary);">
+                    od {{ alert.assigned_at | local_time }}
+                </span>
+            {% else %}
+                <span style="color: var(--text-secondary);">—</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="label">Scenariusze</div>
+        <div class="value">
+            {% for scenario in scenarios %}
+            <a href="/scenarios/{{ scenario.id }}" class="link" style="font-size: 12px; margin-right: 0.5rem;">
+                #{{ scenario.id }} {{ scenario.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{# ── Historia runów ───────────────────────────────────────────────────────── #}
+<h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-secondary);
+           margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+    Historia runów ({{ suite_runs|length }})
+</h3>
+
+{% if suite_runs %}
+<table class="history-table">
+    <thead>
+        <tr>
+            <th>Run</th>
+            <th>Suite</th>
+            <th>Data</th>
+            <th>Status</th>
+            <th>Czas trwania</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for run in suite_runs %}
+        <tr>
+            <td>
+                <a href="/suite-runs/{{ run.id }}" class="link mono">#{{ run.id }}</a>
+                {% if loop.last %}
+                <span class="first-seen-marker">← pierwsze wystąpienie</span>
+                {% endif %}
+            </td>
+            <td class="mono" style="font-size: 11px;">{{ run.suite.name }}</td>
+            <td class="mono" style="font-size: 11px;">{{ run.started_at | local_time }}</td>
+            <td>
+                <span class="status {{ run.status.value }}">{{ run.status.value }}</span>
+            </td>
+            <td class="mono" style="font-size: 11px;">{{ run.duration_seconds | duration }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="color: var(--text-secondary); font-size: 12px;">Brak historii runów.</div>
+{% endif %}
+
+{% endblock %}
