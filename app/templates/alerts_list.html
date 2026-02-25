@@ -440,8 +440,6 @@
                         <input type="hidden" name="analyst_name" value="">
                         <button type="submit" class="action-btn" style="color: var(--accent-yellow);">Start</button>
                     </form>
-                    <button class="action-btn" style="color: var(--accent-green);"
-                            onclick="openResolveModal({{ alert.id }})">Resolve</button>
 
                 {% elif alert.status.value == 'in_progress' %}
                     <button class="action-btn" style="color: var(--accent-green);"
@@ -477,6 +475,7 @@
                 <th>Repeats</th>
                 <th>Assigned</th>
                 <th>Notatka</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -506,6 +505,13 @@
                 <td style="font-size: 11px; color: var(--text-secondary); max-width: 200px;">
                     {{ alert.resolution_note[:80] if alert.resolution_note else '—' }}
                     {% if alert.resolution_note and alert.resolution_note|length > 80 %}…{% endif %}
+                </td>
+                <td style="white-space: nowrap;">
+                    <form method="POST" action="/alerts/{{ alert.id }}/close" style="display:inline;">
+                        <button type="submit" class="action-btn" style="color: var(--accent-green);">
+                            Close
+                        </button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}

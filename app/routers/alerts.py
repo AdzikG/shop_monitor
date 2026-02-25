@@ -137,11 +137,7 @@ async def alert_detail(
         if isinstance(h, list):
             run_ids = h
         elif isinstance(h, str):
-            parsed = json.loads(h)
-            # podwójne kodowanie — wynik pierwszego loads to nadal string
-            if isinstance(parsed, str):
-                parsed = json.loads(parsed)
-            run_ids = parsed if isinstance(parsed, list) else []
+            run_ids = json.loads(h)
         else:
             run_ids = []
     except (json.JSONDecodeError, TypeError):
@@ -242,6 +238,29 @@ async def resolve_alert(
     db.commit()
     return RedirectResponse(url="/alerts", status_code=303)
 
+
+
+
+# ── Close — zamknięcie z backlogu (fix wszedł) ───────────────────────────────
+
+@router.post("/alerts/{alert_group_id}/close")
+async def close_alert(
+    alert_group_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Zamyka alert z backlogu jako rozwiązany.
+    Zachowuje resolution_type (BUG/NEEDS_DEV/CONFIG/etc.) bez zmian.
+    """
+    alert = db.query(AlertGroup).filter(AlertGroup.id == alert_group_id).first()
+    if not alert:
+        return RedirectResponse(url="/alerts", status_code=303)
+
+    alert.status     = AlertStatus.CLOSED
+    alert.resolved_at = datetime.now(timezone.utc)
+
+    db.commit()
+    return RedirectResponse(url="/alerts", status_code=303)
 
 # ── Legacy — zmiana statusu (wsteczna kompatybilność) ────────────────────────
 

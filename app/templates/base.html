@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Przechwytuj wszystkie formularze POST — pokaż modal jeśli brak sesji
-    document.addEventListener('submit', async function(e) {
+    document.addEventListener('submit', function(e) {
         const form = e.target;
 
         // Pomiń GET, pomiń już zweryfikowane, pomiń sam formularz auth
@@ -345,21 +345,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (form._pinVerified) return;
         if (form.action && form.action.includes('/auth/')) return;
 
-        // Sprawdź czy sesja aktywna
-        try {
-            const check = await fetch('/auth/check-session');
-            const data = await check.json();
-
-            if (data.ok) {
-                // Sesja aktywna — przepuść
-                form._pinVerified = true;
-                return;
-            }
-        } catch(e) {}
-
-        // Brak sesji — pokaż modal
+        // ZAWSZE preventDefault synchronicznie — potem sprawdź sesję async
         e.preventDefault();
-        openPinModal(form);
+
+        fetch('/auth/check-session')
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    // Sesja aktywna — wyślij bez modalu
+                    form._pinVerified = true;
+                    form.submit();
+                } else {
+                    // Brak sesji — pokaż modal
+                    openPinModal(form);
+                }
+            })
+            .catch(() => {
+                // Błąd połączenia — pokaż modal
+                openPinModal(form);
+            });
     }, true);  // capture phase — przed HTMX
 });
 
