@@ -198,7 +198,7 @@ async def resolve_alert(
     alert_group_id: int,
     resolution_type: str = Form(...),
     resolution_note: str = Form(""),
-    duplicate_of_id: Optional[int] = Form(None),
+    duplicate_of_id: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     alert = db.query(AlertGroup).filter(AlertGroup.id == alert_group_id).first()
@@ -213,14 +213,21 @@ async def resolve_alert(
     # Wyznacz nowy status na podstawie resolution_type
     new_status = RESOLUTION_TO_STATUS[res_type]
 
+    # Konwertuj duplicate_of_id — pusty string z formularza traktuj jako None
+    dup_id: Optional[int] = None
+    if duplicate_of_id and duplicate_of_id.strip():
+        try:
+            dup_id = int(duplicate_of_id.strip())
+        except ValueError:
+            pass
+
     alert.resolution_type = res_type.value
     alert.resolution_note = resolution_note or None
     alert.status          = new_status
     alert.resolved_at     = datetime.now(timezone.utc)
 
-    # Duplikat — wymagane wskazanie parenta
-    if res_type == ResolutionType.DUPLICATE and duplicate_of_id:
-        alert.duplicate_of_id = duplicate_of_id
+    if res_type == ResolutionType.DUPLICATE and dup_id:
+        alert.duplicate_of_id = dup_id
 
     db.commit()
     return RedirectResponse(url="/alerts", status_code=303)
