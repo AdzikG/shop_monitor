@@ -128,6 +128,21 @@ class SuiteExecutor:
         except Exception as e:
             logger.error(f"Failed to write traceback: {e}")
 
+    @staticmethod
+    def _parse_history(value) -> list:
+        """Parsuje suite_run_history — obsługuje listę, string i podwójnie zakodowany JSON."""
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            try:
+                parsed = json.loads(value)
+                if isinstance(parsed, str):
+                    parsed = json.loads(parsed)
+                return parsed if isinstance(parsed, list) else []
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
+
     def _setup_logging(self):
         log_dir = Path("logs")
         log_dir.mkdir(exist_ok=True)
@@ -374,7 +389,7 @@ class SuiteExecutor:
 
         # Aktualizuj historię
         try:
-            history = json.loads(existing.suite_run_history) if existing.suite_run_history else []
+            history = self._parse_history(existing.suite_run_history)
         except (json.JSONDecodeError, TypeError):
             history = []
         history.append(suite_run.id)
@@ -393,7 +408,7 @@ class SuiteExecutor:
         duplicate.last_suite_run_id = suite_run.id
 
         try:
-            history = json.loads(duplicate.suite_run_history) if duplicate.suite_run_history else []
+            history = self._parse_history(duplicate.suite_run_history)
         except (json.JSONDecodeError, TypeError):
             history = []
         history.append(suite_run.id)
@@ -427,7 +442,7 @@ class SuiteExecutor:
         # NIE czyścimy resolution_type żeby widok mógł pokazać "poprzednio: NAB"
 
         try:
-            history = json.loads(alert.suite_run_history) if alert.suite_run_history else []
+            history = self._parse_history(alert.suite_run_history)
         except (json.JSONDecodeError, TypeError):
             history = []
         history.append(suite_run.id)

@@ -133,7 +133,17 @@ async def alert_detail(
 
     # Historia runów — szczegóły każdego
     try:
-        run_ids = json.loads(alert.suite_run_history) if alert.suite_run_history else []
+        h = alert.suite_run_history
+        if isinstance(h, list):
+            run_ids = h
+        elif isinstance(h, str):
+            parsed = json.loads(h)
+            # podwójne kodowanie — wynik pierwszego loads to nadal string
+            if isinstance(parsed, str):
+                parsed = json.loads(parsed)
+            run_ids = parsed if isinstance(parsed, list) else []
+        else:
+            run_ids = []
     except (json.JSONDecodeError, TypeError):
         run_ids = []
 
