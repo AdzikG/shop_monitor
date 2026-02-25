@@ -4,18 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Shop Monitor{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
     <style>
         :root {
-            --bg-dark: #0a0a0a;
-            --bg-panel: #151515;
-            --bg-hover: #1f1f1f;
-            --text-primary: #e8e8e8;
-            --text-secondary: #888;
-            --border: #2a2a2a;
+            --bg-dark: #000;
+            --bg-panel: #0f0f0f;
+            --bg-hover: #222;
+            --text-primary: #fff;
+            --text-secondary: #d1d1d1;
+            --border: #333;
             --accent-green: #00ff41;
             --accent-red: #ff0055;
-            --accent-yellow: #ffdd00;
+            --accent-yellow: #fff200;
         }
         
         * {
@@ -25,10 +29,10 @@
         }
         
         body {
-            font-family: 'IBM Plex Mono', 'Courier New', monospace;
+            font-family: 'Fira Code', 'Courier New', monospace;
             background: var(--bg-dark);
             color: var(--text-primary);
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.6;
         }
         
@@ -42,11 +46,10 @@
         }
         
         header h1 {
-            font-size: 14px;
+            font-size: 17px;
             font-weight: 700;
             letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--accent-green);
+            color: var(--accent-yellow);
         }
         
         nav {
@@ -98,7 +101,7 @@
         .stat-value {
             font-size: 28px;
             font-weight: 700;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'Fira Code', monospace;
         }
         
         table {
@@ -176,7 +179,7 @@
         }
         
         .mono {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'Fira Code', monospace;
             color: var(--text-secondary);
         }
         
@@ -194,15 +197,19 @@
 </head>
 <body>
     <header>
-        <h1>⬛ Shop Monitor</h1>
+        <h1>
+            <img src="/static/icons/logo.png" 
+         style="height: 20px; width: 20px; object-fit: contain; vertical-align: middle; margin-right: 0.5rem;">
+            WACEK - Strażnik Koszyka
+        </h1>
         <nav>
             <a href="/dashboard" {% if request.url.path == '/dashboard' %}class="active"{% endif %}>Dashboard</a>
-            <a href="/execute" {% if request.url.path == '/execute' %}class="active"{% endif %}>Run</a>
-            <a href="/suite-runs" {% if "/suite-runs" in request.url.path %}class="active"{% endif %}>Runs</a>
-            <a href="/suites" {% if "/suites" in request.url.path %}class="active"{% endif %}>Suites</a>
-            <a href="/scenarios" {% if "/scenarios" in request.url.path %}class="active"{% endif %}>Scenarios</a>
-            <a href="/alert-configs" {% if "/alert-configs" in request.url.path %}class="active"{% endif %}>Alert Configs</a>
-            <a href="/alerts" {% if "/alerts" in request.url.path %}class="active"{% endif %}>Alerts</a>
+            <a href="/execute" {% if request.url.path == '/execute' %}class="active"{% endif %}>Uruchom</a>
+            <a href="/suite-runs" {% if "/suite-runs" in request.url.path %}class="active"{% endif %}>Runy</a>
+            <a href="/suites" {% if "/suites" in request.url.path %}class="active"{% endif %}>Suity</a>
+            <a href="/scenarios" {% if "/scenarios" in request.url.path %}class="active"{% endif %}>Scenariusze</a>
+            <a href="/alert-configs" {% if "/alert-configs" in request.url.path %}class="active"{% endif %}>Konfiguracja alertów</a>
+            <a href="/alerts" {% if "/alerts" in request.url.path %}class="active"{% endif %}>Alerty</a>
         </nav>
     </header>
     
@@ -243,7 +250,7 @@
                 border: 1px solid var(--border);
                 color: var(--text-primary);
                 padding: 0.5rem 0.75rem;
-                font-family: 'IBM Plex Mono', monospace;
+                font-family: 'Fira Code', monospace;
                 font-size: 14px;
                 margin-bottom: 0.5rem;
             "

@@ -2,32 +2,289 @@
 
 {% block title %}Dashboard — Shop Monitor{% endblock %}
 
+{% block extra_head %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        padding: 1.25rem 1.5rem;
+        text-decoration: none;
+        display: block;
+        transition: border-color 0.15s;
+    }
+
+    .stat-card:hover {
+        border-color: var(--accent-green);
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.6rem;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-sub {
+        font-size: 10px;
+        color: var(--text-secondary);
+        margin-top: 0.4rem;
+    }
+
+    /* Trend card */
+    .trend-card {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .trend-arrow {
+        font-size: 28px;
+        line-height: 1;
+    }
+
+    .trend-info .trend-pct {
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .trend-info .trend-label {
+        font-size: 10px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 0.2rem;
+    }
+
+    /* Sekcja bottom */
+    .dashboard-bottom {
+        display: grid;
+        grid-template-columns: 1fr 1.8fr;
+        gap: 1.5rem;
+        margin-top: 2rem;
+        align-items: start;
+    }
+
+    @media (max-width: 1000px) {
+        .dashboard-bottom { grid-template-columns: 1fr; }
+    }
+
+    .section-title {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* Top błędów */
+    .top-errors-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .top-errors-table th {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        padding: 0.4rem 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-dark);
+        font-weight: 600;
+        height: 41px;
+    }
+
+    .top-errors-table td {
+        padding: 0.55rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+    }
+
+    .top-errors-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .top-errors-table tr:hover td {
+        background: var(--bg-hover);
+    }
+
+    .repeat-badge {
+        display: inline-block;
+        padding: 0.15rem 0.4rem;
+        background: rgba(255, 0, 85, 0.15);
+        color: var(--accent-red);
+        border: 1px solid rgba(255, 0, 85, 0.3);
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .env-badge {
+        display: inline-block;
+        padding: 0.15rem 0.4rem;
+        border: 1px solid var(--border);
+        font-size: 10px;
+        color: var(--text-secondary);
+    }
+
+    .rank-num {
+        color: var(--text-secondary);
+        font-size: 11px;
+        width: 24px;
+        display: inline-block;
+        text-align: right;
+    }
+
+    .no-data {
+        padding: 2rem;
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+
+{# ── Liczniki ─────────────────────────────────────────────────────────────── #}
 <div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-label">Total Suite Runs</div>
-        <div class="stat-value">{{ total_runs }}</div>
+
+    <a href="/alerts?status=active" class="stat-card">
+        <div class="stat-label">Aktywne alerty</div>
+        <div class="stat-value" style="color: var(--accent-red);">{{ active_alerts }}</div>
+        <div class="stat-sub">OPEN + IN PROGRESS</div>
+    </a>
+
+    <a href="/alerts?status=awaiting" class="stat-card">
+        <div class="stat-label">Backlog</div>
+        <div class="stat-value" style="color: var(--accent-yellow);">{{ backlog_alerts }}</div>
+        <div class="stat-sub">czeka na fix</div>
+    </a>
+
+    <a href="/alerts?status=active&period=today" class="stat-card">
+        <div class="stat-label">Nowe dziś</div>
+        <div class="stat-value" style="color: var(--accent-yellow);">{{ new_today }}</div>
+        <div class="stat-sub">ostatnie 24h</div>
+    </a>
+
+    <a href="/suite-runs" class="stat-card">
+        <div class="stat-label">Scenariusze 24h</div>
+        <div class="stat-value" style="color: var(--text-primary);">{{ scenarios_24h }}</div>
+        <div class="stat-sub">wykonanych</div>
+    </a>
+
+    <a href="/suite-runs?status=failed" class="stat-card">
+        <div class="stat-label">Faile 24h</div>
+        <div class="stat-value" style="color: {% if failed_24h > 0 %}var(--accent-red){% else %}var(--accent-green){% endif %};">
+            {{ failed_24h }}
+        </div>
+        <div class="stat-sub">nieudanych scenariuszy</div>
+    </a>
+
+    <div class="trend-card">
+        <div class="trend-arrow">
+            {% if trend_up %}
+                <span style="color: var(--accent-red);">↑</span>
+            {% else %}
+                <span style="color: var(--accent-green);">↓</span>
+            {% endif %}
+        </div>
+        <div class="trend-info">
+            <div class="trend-pct" style="color: {% if trend_up %}var(--accent-red){% else %}var(--accent-green){% endif %};">
+                {% if trend_pct == 0 %}bez zmian{% else %}{{ trend_pct }}%{% endif %}
+            </div>
+            <div class="trend-label">
+                trend alertów · ten tydzień: {{ alerts_this_week }}
+            </div>
+        </div>
     </div>
-    
-    <div class="stat-card">
-        <div class="stat-label">Failed/Partial Runs</div>
-        <div class="stat-value" style="color: var(--accent-red);">{{ failed_runs }}</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-label">Total Alerts</div>
-        <div class="stat-value" style="color: var(--accent-yellow);">{{ total_alerts }}</div>
-    </div>
+
 </div>
 
-<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
-    Recent Suite Runs
-    <span style="font-size: 10px; color: var(--text-secondary); font-weight: normal; margin-left: 1rem;">
-        Auto-refresh: 15s
-    </span>
-</h2>
+{# ── Bottom: Top błędów + ostatnie runy ───────────────────────────────────── #}
+<div class="dashboard-bottom">
 
-<div id="runs-table-container" hx-get="/dashboard/runs-table" hx-trigger="load, every 15s" hx-swap="innerHTML">
-    {% include 'dashboard_runs_table.html' %}
+    {# Top błędów #}
+    <div>
+        <div class="section-title">🔥 Najczęstsze błędy</div>
+        {% if top_alerts %}
+        <table class="top-errors-table" style="background: var(--bg-panel); border: 1px solid var(--border);">
+            <thead>
+                <tr>
+                    <th>LP</th>
+                    <th>Błąd</th>
+                    <th>Env</th>
+                    <th>Pow.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in top_alerts %}
+                <tr>
+                    <td class="mono">#{{ loop.index }}</td>
+                    <td>
+                        <a href="/alerts/{{ alert.id }}" class="link" style="font-size: 12px;">
+                            {{ alert.title or alert.business_rule }}
+                        </a>
+                        <div style="font-size: 10px; color: var(--text-secondary); margin-top: 0.15rem;">
+                            {{ alert.status.value.replace('_', ' ') }}
+                            {% if alert.resolution_type %}
+                            · {{ alert.resolution_type.replace('_', ' ').upper() }}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="env-badge">
+                            {{ alert.last_suite_run.environment.name if alert.last_suite_run else '—' }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="repeat-badge">×{{ alert.repeat_count }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-data">Brak aktywnych błędów 🎉</div>
+        {% endif %}
+    </div>
+
+    {# Ostatnie runy #}
+    <div>
+        <div class="section-title">
+            Ostatnie runy
+            <span style="font-size: 9px; color: var(--text-secondary); margin-left: 1rem; text-transform: none; letter-spacing: 0;">
+                auto-odświeżanie co 15s
+            </span>
+        </div>
+        <div id="runs-table-container"
+             hx-get="/dashboard/runs-table"
+             hx-trigger="load, every 15s"
+             hx-swap="innerHTML">
+            {% include 'dashboard_runs_table.html' %}
+        </div>
+    </div>
+
 </div>
 {% endblock %}

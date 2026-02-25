@@ -1,10 +1,53 @@
 {% extends "base.html" %}
 
-{% block title %}Suite Runs — Shop Monitor{% endblock %}
+{% block title %}Runy — Shop Monitor{% endblock %}
+
+{% block extra_head %}
+<style>
+    .pagination {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1.25rem;
+        font-size: 12px;
+    }
+
+    .pagination a, .pagination span {
+        padding: 0.35rem 0.65rem;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-family: 'Fira Code', monospace;
+        font-size: 11px;
+        transition: border-color 0.15s, color 0.15s;
+    }
+
+    .pagination a:hover {
+        border-color: var(--accent-green);
+        color: var(--text-primary);
+    }
+
+    .pagination span.current {
+        border-color: var(--accent-green);
+        color: var(--accent-green);
+    }
+
+    .pagination span.disabled {
+        opacity: 0.3;
+        cursor: default;
+    }
+
+    .page-info {
+        margin-left: auto;
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">
-    All Suite Runs
+    Runy suite
 </h2>
 
 <table>
@@ -12,12 +55,12 @@
         <tr>
             <th>ID</th>
             <th>Suite</th>
-            <th>Environment</th>
+            <th>Środowisko</th>
             <th>Status</th>
-            <th>Scenarios</th>
-            <th>Started</th>
-            <th>Duration</th>
-            <th>Alerts</th>
+            <th>Scenariusze</th>
+            <th>Rozpoczęto</th>
+            <th>Czas</th>
+            <th>Alerty</th>
         </tr>
     </thead>
     <tbody>
@@ -29,12 +72,19 @@
             </td>
             <td class="mono">{{ run.environment.name }}</td>
             <td>
-                <span class="status {{ run.status.value }}">{{ run.status.value }}</span>
+                <span class="status {{ run.status.value }}">
+                    {% if run.status.value == 'success' %}sukces
+                    {% elif run.status.value == 'failed' %}błąd
+                    {% elif run.status.value == 'partial' %}częściowy
+                    {% elif run.status.value == 'running' %}trwa
+                    {% else %}{{ run.status.value }}{% endif %}
+                </span>
             </td>
             <td class="mono">
-                <span style="color: var(--accent-green);">{{ run.success_scenarios }}</span> /
-                <span style="color: var(--accent-red);">{{ run.failed_scenarios }}</span> /
-                <span style="color: var(--text-secondary);">{{ run.total_scenarios }}</span>
+                <span style="color: var(--accent-green);">{{ run.success_scenarios }}</span>
+                <span style="color: var(--text-secondary);"> / </span>
+                <span style="color: var(--accent-red);">{{ run.failed_scenarios }}</span>
+                <span style="color: var(--text-secondary);"> / {{ run.total_scenarios }}</span>
             </td>
             <td class="mono">{{ run.started_at | local_time }}</td>
             <td class="mono">{{ run.duration_seconds | duration }}</td>
@@ -49,4 +99,40 @@
         {% endfor %}
     </tbody>
 </table>
+
+{# ── Paginacja ─────────────────────────────────────────────────────────────── #}
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="?page=1">«</a>
+        <a href="?page={{ page - 1 }}">‹</a>
+    {% else %}
+        <span class="disabled">«</span>
+        <span class="disabled">‹</span>
+    {% endif %}
+
+    {# Okno stron — max 5 naraz #}
+    {% set start = [1, page - 2] | max %}
+    {% set end = [total_pages, page + 2] | min %}
+
+    {% for p in range(start, end + 1) %}
+        {% if p == page %}
+            <span class="current">{{ p }}</span>
+        {% else %}
+            <a href="?page={{ p }}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}">›</a>
+        <a href="?page={{ total_pages }}">»</a>
+    {% else %}
+        <span class="disabled">›</span>
+        <span class="disabled">»</span>
+    {% endif %}
+
+    <span class="page-info">
+        {{ (page - 1) * page_size + 1 }}–{{ [page * page_size, total] | min }} z {{ total }}
+    </span>
+</div>
+
 {% endblock %}
