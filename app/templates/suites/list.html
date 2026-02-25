@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Suites — Shop Monitor{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">Suites</h2>
+    <a href="/suites/new" class="btn-primary">+ Nowa Suite</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Nazwa</th>
+            <th>Aktywne scenariusze</th>
+            <th>Wszystkie scenariusze</th>
+            <th>Workers</th>
+            <th>Status</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for suite in suites %}
+        <tr>
+            <td class="mono">{{ suite.id }}</td>
+            <td>
+                <a href="/suites/{{ suite.id }}" class="link">{{ suite.name }}</a>
+                {% if suite.description %}
+                <div style="color:var(--text-secondary); font-size:11px; margin-top:2px;">{{ suite.description }}</div>
+                {% endif %}
+            </td>
+            <td class="mono">{{ suite._active_scenario_count }}</td>
+            <td class="mono">{{ suite._all_scenario_count }}</td>
+            <td class="mono">{{ suite.workers }}</td>
+            <td>
+                {% if suite.is_active %}
+                    <span class="badge-green">ACTIVE</span>
+                {% else %}
+                    <span class="badge-gray">INACTIVE</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="/suites/{{ suite.id }}/edit" class="btn-sm">Edytuj</a>
+                <form method="post" action="/suites/{{ suite.id }}/delete" style="display:inline"
+                      onsubmit="return confirm('Dezaktywować suite {{ suite.name }}?')">
+                    <button type="submit" class="btn-sm btn-danger">Usuń</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" style="text-align:center; color:var(--text-secondary); padding:2rem;">
+                Brak suite. <a href="/suites/new" class="link">Utwórz pierwszą →</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% block extra_styles %}
+<style>
+.btn-primary {
+    background: var(--accent-green);
+    color: var(--bg-dark);
+    padding: 0.4rem 1rem;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.btn-sm {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn-danger { border-color: var(--accent-red); color: var(--accent-red); }
+.badge-green { background: var(--accent-green); color: var(--bg-dark); padding: 0.1rem 0.4rem; font-size:10px; font-weight:700; }
+.badge-gray  { background: var(--border); border-color: var(--accent-red); color: var(--accent-red); padding: 0.1rem 0.4rem; font-size:10px; }
+</style>
+{% endblock %}
+{% endblock %}

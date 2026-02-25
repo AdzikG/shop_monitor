@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — Shop Monitor{% endblock %}
+
+{% block extra_head %}
+<style>
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+.form-group {
+    margin-bottom: 1.2rem;
+}
+label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.4rem;
+}
+input[type="text"], input[type="number"], textarea {
+    width: 100%;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.5rem 0.75rem;
+    font-family: inherit;
+    font-size: 13px;
+}
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-green);
+}
+textarea { min-height: 80px; resize: vertical; }
+
+.toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.4rem;
+}
+.toggle-wrap input { width: auto; }
+
+/* ── Scenario Picker ── */
+.scenario-picker {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    padding: 0;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.scenario-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg-dark);
+    z-index: 1;
+}
+.scenario-search {
+    width: 100%;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.35rem 0.6rem;
+    font-family: inherit;
+    font-size: 12px;
+}
+.scenario-search:focus { outline: none; border-color: var(--accent-green); }
+
+.scenario-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+}
+.scenario-item:hover { background: var(--bg-hover); }
+.scenario-item.selected { border-left: 3px solid var(--accent-green); padding-left: calc(1rem - 3px); }
+.scenario-item input[type="checkbox"] { accent-color: var(--accent-green); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.scenario-item-name { font-size: 13px; flex: 1; }
+.scenario-item-desc { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+.scenario-item-tag {
+    font-size: 10px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 0.1rem 0.4rem;
+    flex-shrink: 0;
+}
+.scenario-item-tag.inactive { border-color: var(--accent-red); color: var(--accent-red); }
+
+.selected-summary {
+    color: var(--accent-green);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* ── Assigned order list ── */
+.assigned-list {
+    margin-top: 1rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+}
+.assigned-list-header {
+    padding: 0.5rem 1rem;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-dark);
+}
+.assigned-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+}
+.assigned-item:last-child { border-bottom: none; }
+.drag-handle { cursor: grab; color: var(--text-secondary); font-size: 14px; }
+.assigned-item-num { color: var(--text-secondary); font-size: 11px; min-width: 20px; }
+.btn-unassign {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 4px;
+    line-height: 1;
+}
+.btn-unassign:hover { color: var(--accent-red); }
+
+/* ── Actions ── */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+.btn-primary {
+    background: var(--accent-green);
+    color: var(--bg-dark);
+    padding: 0.5rem 1.5rem;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.btn-cancel {
+    background: none;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1.2rem;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+.btn-cancel:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:1.5rem;">
+    <a href="/suites" style="color:var(--text-secondary); text-decoration:none; font-size:11px;">← Suites</a>
+    <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase; margin-top:0.5rem;">{{ title }}</h2>
+</div>
+
+<form method="post" id="suite-form">
+
+<div class="form-grid">
+
+    <!-- LEWA KOLUMNA — dane suite -->
+    <div>
+        <div class="form-group">
+            <label>Nazwa *</label>
+            <input type="text" name="name" required
+                   value="{{ suite.name if suite else '' }}"
+                   placeholder="np. Checkout podstawowy">
+        </div>
+
+        <div class="form-group">
+            <label>Opis</label>
+            <textarea name="description" placeholder="Krótki opis co testuje ta suite...">{{ suite.description if suite and suite.description else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Workers (równoległość)</label>
+            <input type="number" name="workers" min="1" max="20"
+                   value="{{ suite.workers if suite else 2 }}">
+        </div>
+
+        <div class="form-group">
+            <label>Status</label>
+            <div class="toggle-wrap">
+                <input type="checkbox" name="is_active" value="true" id="is_active"
+                       {{ 'checked' if suite and suite.is_active else '' }}>
+                <label for="is_active" style="text-transform:none; font-size:13px; color:var(--text-primary);">Aktywna</label>
+            </div>
+        </div>
+
+        <!-- Assigned order list -->
+        <div class="assigned-list" id="assigned-list-wrap">
+            <div class="assigned-list-header">
+                Kolejność scenariuszy w suite
+                <span class="selected-summary" id="selected-count">0 wybranych</span>
+            </div>
+            <div id="assigned-order-list">
+                <!-- wypełniane przez JS -->
+                <div style="padding:1rem; color:var(--text-secondary); font-size:12px; text-align:center;" id="assigned-empty">
+                    Zaznacz scenariusze po prawej →
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden inputs dla kolejności (wysyłane z formem) -->
+        <div id="hidden-inputs"></div>
+    </div>
+
+    <!-- PRAWA KOLUMNA — picker scenariuszy -->
+    <div>
+        <label style="display:block; margin-bottom:0.6rem;">Scenariusze</label>
+        <div class="scenario-picker">
+            <div class="scenario-picker-header">
+                <input type="text" class="scenario-search" id="scenario-search"
+                       placeholder="Szukaj scenariusza...">
+            </div>
+            <div id="scenario-list">
+                {% for scenario in scenarios %}
+                <div class="scenario-item {% if scenario.id in assigned_ids %}selected{% endif %}"
+                     data-id="{{ scenario.id }}"
+                     data-name="{{ scenario.name }}"
+                     data-active="{{ 'true' if scenario.is_active else 'false' }}"
+                     onclick="toggleScenario(this)">
+                    <input type="checkbox" onclick="event.stopPropagation()"
+                           {% if scenario.id in assigned_ids %}checked{% endif %}
+                           onchange="toggleScenario(this.parentElement)">
+                    <div style="flex:1;">
+                        <div class="scenario-item-name">{{ scenario.name }}</div>
+                        {% if scenario.description %}
+                        <div class="scenario-item-desc">{{ scenario.description }}</div>
+                        {% endif %}
+                    </div>
+                    <span class="scenario-item-tag {% if not scenario.is_active %}inactive{% endif %}">
+                        {{ 'ACTIVE' if scenario.is_active else 'INACTIVE' }}
+                    </span>
+                </div>
+                {% else %}
+                <div style="padding:2rem; text-align:center; color:var(--text-secondary);">
+                    Brak scenariuszy. <a href="/scenarios/new" class="link">Utwórz pierwszy →</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.form-grid -->
+
+<div class="form-actions">
+    <button type="submit" class="btn-primary">💾 Zapisz suite</button>
+    <a href="/suites{% if suite %}/{{ suite.id }}{% endif %}" class="btn-cancel">Anuluj</a>
+</div>
+
+</form>
+
+<script>
+// ── Stan ──────────────────────────────────────────────────────────────────
+// assignedOrder = lista {id, name} w kolejności
+let assignedOrder = [
+    {% for sid in assigned_ids %}
+        {% for scenario in scenarios %}
+            {% if scenario.id == sid %}
+            { id: {{ scenario.id }}, name: {{ scenario.name | tojson }} },
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+];
+
+// ── Toggle scenariusz ─────────────────────────────────────────────────────
+function toggleScenario(el) {
+    const id = parseInt(el.dataset.id);
+    const name = el.dataset.name;
+    const cb = el.querySelector('input[type="checkbox"]');
+    const idx = assignedOrder.findIndex(s => s.id === id);
+
+    if (idx === -1) {
+        // dodaj
+        assignedOrder.push({ id, name });
+        el.classList.add('selected');
+        cb.checked = true;
+    } else {
+        // usuń
+        assignedOrder.splice(idx, 1);
+        el.classList.remove('selected');
+        cb.checked = false;
+    }
+    renderAssigned();
+}
+
+// ── Render assigned list ──────────────────────────────────────────────────
+function renderAssigned() {
+    const list = document.getElementById('assigned-order-list');
+    const empty = document.getElementById('assigned-empty');
+    const count = document.getElementById('selected-count');
+    const hiddenWrap = document.getElementById('hidden-inputs');
+
+    count.textContent = assignedOrder.length + ' wybranych';
+
+    // Hidden inputs — wysyłane z formem
+    hiddenWrap.innerHTML = assignedOrder
+        .map(s => `<input type="hidden" name="scenario_ids" value="${s.id}">`)
+        .join('');
+
+    if (assignedOrder.length === 0) {
+        list.innerHTML = '<div style="padding:1rem; color:var(--text-secondary); font-size:12px; text-align:center;" id="assigned-empty">Zaznacz scenariusze po prawej →</div>';
+        return;
+    }
+
+    list.innerHTML = assignedOrder.map((s, i) => `
+        <div class="assigned-item" draggable="true"
+             data-id="${s.id}" data-index="${i}"
+             ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)">
+            <span class="drag-handle">⠿</span>
+            <span class="assigned-item-num">${i + 1}.</span>
+            <span>${s.name}</span>
+            <button type="button" class="btn-unassign" onclick="removeAssigned(${s.id})" title="Usuń">✕</button>
+        </div>
+    `).join('');
+}
+
+function removeAssigned(id) {
+    const idx = assignedOrder.findIndex(s => s.id === id);
+    if (idx !== -1) assignedOrder.splice(idx, 1);
+    // Odznacz w picker
+    const pickerItem = document.querySelector(`.scenario-item[data-id="${id}"]`);
+    if (pickerItem) {
+        pickerItem.classList.remove('selected');
+        pickerItem.querySelector('input[type="checkbox"]').checked = false;
+    }
+    renderAssigned();
+}
+
+// ── Drag & Drop do reorder ────────────────────────────────────────────────
+let dragSrcIndex = null;
+
+function dragStart(e) {
+    dragSrcIndex = parseInt(e.currentTarget.dataset.index);
+    e.dataTransfer.effectAllowed = 'move';
+}
+function dragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+function dragDrop(e) {
+    e.preventDefault();
+    const targetIndex = parseInt(e.currentTarget.dataset.index);
+    if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+    const moved = assignedOrder.splice(dragSrcIndex, 1)[0];
+    assignedOrder.splice(targetIndex, 0, moved);
+    dragSrcIndex = null;
+    renderAssigned();
+}
+
+// ── Szukaj scenariuszy ────────────────────────────────────────────────────
+document.getElementById('scenario-search').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.scenario-item').forEach(item => {
+        const name = item.dataset.name.toLowerCase();
+        item.style.display = name.includes(q) ? '' : 'none';
+    });
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderAssigned();
+</script>
+{% endblock %}

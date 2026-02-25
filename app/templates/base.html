@@ -199,10 +199,10 @@
             <a href="/dashboard" {% if request.url.path == '/dashboard' %}class="active"{% endif %}>Dashboard</a>
             <a href="/execute" {% if request.url.path == '/execute' %}class="active"{% endif %}>Run</a>
             <a href="/suite-runs" {% if "/suite-runs" in request.url.path %}class="active"{% endif %}>Runs</a>
+            <a href="/suites" {% if "/suites" in request.url.path %}class="active"{% endif %}>Suites</a>
             <a href="/scenarios" {% if "/scenarios" in request.url.path %}class="active"{% endif %}>Scenarios</a>
             <a href="/alert-configs" {% if "/alert-configs" in request.url.path %}class="active"{% endif %}>Alert Configs</a>
             <a href="/alerts" {% if "/alerts" in request.url.path %}class="active"{% endif %}>Alerts</a>
-            <a href="/runs" {% if '/runs' in request.url.path %}class="active"{% endif %}>Runs</a>
         </nav>
     </header>
     

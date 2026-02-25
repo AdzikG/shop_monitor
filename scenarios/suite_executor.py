@@ -222,6 +222,19 @@ class SuiteExecutor:
                     continue
             
             if existing:
+                 # Aktualizuj istniejący alert — POWTÓRZYŁ SIĘ!
+                
+                # ── SCAL scenario_ids ──────────────────────────────────
+                # Stary alert mógł mieć [1], nowy run rzuca [1, 5, 7].
+                # Łączymy: union obu zbiorów, sortujemy.
+                try:
+                    old_ids = set(json.loads(existing.scenario_ids))
+                except Exception:
+                    old_ids = set()
+
+                merged_ids = sorted(old_ids | set(scenario_ids_sorted))
+                existing.scenario_ids = json.dumps(merged_ids)
+
                 # Aktualizuj istniejący alert — POWTÓRZYŁ SIĘ!
                 existing.repeat_count += 1
                 existing.last_seen_at = datetime.now(timezone.utc)
@@ -236,7 +249,11 @@ class SuiteExecutor:
                 history.append(suite_run.id)
                 existing.suite_run_history = json.dumps(history)
                 
-                logger.info(f"Alert {existing.business_rule} powtórzył się (repeat: {existing.repeat_count}x)")
+                logger.info(
+                    f"Alert {existing.business_rule} powtórzył się "
+                    f"(repeat: {existing.repeat_count}x, "
+                    f"scenarios: {merged_ids})"
+                )
             else:
                 # Nowy alert group
                 history = [suite_run.id]
