@@ -1,3 +1,0 @@
-@echo off
-echo Uruchamianie panelu...
-python run_panel.py
