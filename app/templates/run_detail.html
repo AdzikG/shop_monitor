@@ -4,15 +4,15 @@
 
 {% block content %}
 <div style="margin-bottom: 2rem;">
-    <a href="/runs" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Back to runs</a>
+    <a href="/runs" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Runy</a>
 </div>
 
 <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 2rem;">
-    <h1 style="font-size: 18px; margin-bottom: 1rem;">{{ run.scenario.name }}</h1>
+    <h1 style="font-size: 15px; margin-bottom: 1rem;">{{ run.scenario.name }}</h1>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 12px;">
         <div>
-            <div class="stat-label">Run ID</div>
+            <div class="stat-label">ID runu</div>
             <div class="mono">#{{ run.id }}</div>
         </div>
         <div>
@@ -28,18 +28,18 @@
             <span class="status {{ run.status.value }}">{{ run.status.value }}</span>
         </div>
         <div>
-            <div class="stat-label">Started</div>
+            <div class="stat-label">Rozpoczęto</div>
             <div class="mono">{{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
         </div>
         <div>
-            <div class="stat-label">Duration</div>
+            <div class="stat-label">Czas</div>
             <div class="mono">{{ run.duration_seconds | duration }}</div>
         </div>
     </div>
     
     {% if run.product_name %}
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-        <div class="stat-label">Product</div>
+        <div class="stat-label">Produkt</div>
         <div>{{ run.product_name }}</div>
         {% if run.product_id %}
         <div class="mono" style="color: var(--text-secondary); font-size: 11px;">ID: {{ run.product_id }}</div>
@@ -49,18 +49,18 @@
 </div>
 
 <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
-    Alerts ({{ alerts | selectattr('is_counted') | list | length }} counted)
+    Alerty ({{ alerts | selectattr('is_counted') | list | length }} zliczonych)
 </h2>
 
 {% if alerts %}
 <table style="margin-bottom: 2rem;">
     <thead>
         <tr>
-            <th>Type</th>
-            <th>Business Rule</th>
-            <th>Title</th>
-            <th>Description</th>
-            <th>Counted</th>
+            <th>Typ</th>
+            <th>Reguła</th>
+            <th>Tytuł</th>
+            <th>Opis</th>
+            <th>Zliczony</th>
         </tr>
     </thead>
     <tbody>
@@ -76,30 +76,30 @@
             <td style="max-width: 400px; font-size: 11px; color: var(--text-secondary);">
                 {{ alert.description or '—' }}
             </td>
-            <td class="mono">{{ 'Yes' if alert.is_counted else 'No' }}</td>
+            <td class="mono">{{ 'Tak' if alert.is_counted else 'Nie' }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
 <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--text-secondary);">
-    No alerts for this run
+    Brak alertów dla tego runu
 </div>
 {% endif %}
 
 {% if snapshots %}
 <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 2rem 0 1rem; color: var(--text-secondary);">
-    Basket Snapshots
+    Snapshoty koszyka
 </h2>
 
 <table>
     <thead>
         <tr>
-            <th>Stage</th>
-            <th>Product Price</th>
-            <th>Delivery Price</th>
-            <th>Total Price</th>
-            <th>Captured</th>
+            <th>Etap</th>
+            <th>Cena produktu</th>
+            <th>Dostawa</th>
+            <th>Suma</th>
+            <th>Czas</th>
         </tr>
     </thead>
     <tbody>

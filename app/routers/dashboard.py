@@ -62,13 +62,31 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     trend_up = trend_pct >= 0
 
     # ── Top błędów ────────────────────────────────────────────────────────────
-    top_alerts = (
+    from app.models.environment import Environment
+    from sqlalchemy import and_
+
+    prod_env = db.query(Environment).filter_by(name="PROD").first()
+
+    top_alerts_raw = (
         db.query(AlertGroup)
-        .filter(AlertGroup.status != AlertStatus.CLOSED)
+        .join(SuiteRun, AlertGroup.last_suite_run_id == SuiteRun.id)
+        .filter(
+            AlertGroup.last_seen_at >= week_ago,
+            SuiteRun.environment_id == prod_env.id if prod_env else True
+        )
         .order_by(desc(AlertGroup.repeat_count))
-        .limit(10)
         .all()
     )
+
+    # Deduplikacja — max 1 per business_rule
+    seen_rules = set()
+    top_alerts = []
+    for ag in top_alerts_raw:
+        if ag.business_rule not in seen_rules:
+            seen_rules.add(ag.business_rule)
+            top_alerts.append(ag)
+        if len(top_alerts) >= 10:
+            break
 
     # ── Ostatnie runy (10) ────────────────────────────────────────────────────
     recent_runs = (

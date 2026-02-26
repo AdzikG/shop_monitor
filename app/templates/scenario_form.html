@@ -1,9 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}{% if mode == 'create' %}New Scenario{% else %}Edit {{ scenario.name }}{% endif %} — Shop Monitor{% endblock %}
+{% block title %}{% if mode == 'create' %}Niewy scenariusz{% else %}Edit {{ scenario.name }}{% endif %} — Shop Monitor{% endblock %}
 
 {% block extra_head %}
 <style>
+    .action-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.25rem 0.6rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .action-btn:hover {
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+    }
+    .action-btn.danger:hover {
+        border-color: var(--accent-red);
+        color: var(--accent-red);
+    }
+
     form {
         background: var(--bg-panel);
         border: 1px solid var(--border);
@@ -95,52 +118,52 @@
 
 {% block content %}
 <div style="margin-bottom: 2rem;">
-    <a href="{% if scenario %}/scenarios/{{ scenario.id }}{% else %}/scenarios{% endif %}" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Back</a>
+    <a href="{% if scenario %}/scenarios/{{ scenario.id }}{% else %}/scenarios{% endif %}" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Wróć</a>
 </div>
 
 <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">
-    {% if mode == 'create' %}New Scenario{% else %}Edit Scenario{% endif %}
+    {% if mode == 'create' %}Niewy scenariusz{% else %}Edytuj scenariusz{% endif %}
 </h2>
 
 <form method="POST">
     <div class="form-group">
-        <label for="name">Name *</label>
+        <label for="name">Nazwa *</label>
         <input type="text" name="name" id="name" required value="{{ scenario.name if scenario else '' }}">
     </div>
     
     <div class="form-group">
-        <label for="description">Description</label>
+        <label for="description">Opis</label>
         <textarea name="description" id="description">{{ scenario.description if scenario else '' }}</textarea>
     </div>
     
     <div class="form-group">
-        <label for="listing_urls">Listing URLs (one per line) *</label>
+        <label for="listing_urls">URL listingu (jeden na linię) *</label>
         <textarea name="listing_urls" id="listing_urls" required>{% if scenario %}{{ '\n'.join(scenario.listing_urls) }}{% endif %}</textarea>
-        <div class="hint">One URL per line. Will randomly pick one on each run.</div>
+        <div class="hint">Jeden URL na linię. Losowo wybierany przy każdym uruchomieniu.</div>
     </div>
     
     <div class="form-group">
-        <label for="delivery_name">Delivery Name</label>
+        <label for="delivery_name">Dostawa</label>
         <input type="text" name="delivery_name" id="delivery_name" value="{{ scenario.delivery_name if scenario else '' }}">
-        <div class="hint">e.g., "Kurier", "Paczkomat"</div>
+        <div class="hint">np. "Kurier", "Paczkomat"</div>
     </div>
     
     <div class="form-group">
-        <label for="payment_name">Payment Name</label>
+        <label for="payment_name">Płatność</label>
         <input type="text" name="payment_name" id="payment_name" value="{{ scenario.payment_name if scenario else '' }}">
-        <div class="hint">e.g., "Karta", "Przelew", "BLIK"</div>
+        <div class="hint">np. "Karta", "Przelew", "BLIK"</div>
     </div>
     
     <div class="form-group">
-        <label for="postal_code">Postal Code</label>
+        <label for="postal_code">Kod pocztowy</label>
         <input type="text" name="postal_code" id="postal_code" value="{{ scenario.postal_code if scenario else '' }}">
-        <div class="hint">e.g., "00-001"</div>
+        <div class="hint">np. "00-001"</div>
     </div>
     
     <div class="form-group">
         <div class="checkbox-group">
             <input type="checkbox" name="should_order" id="should_order" value="true" {% if scenario and scenario.should_order %}checked{% endif %}>
-            <label for="should_order" style="margin: 0; text-transform: none;">Should Order (complete checkout)</label>
+            <label for="should_order" style="margin: 0; text-transform: none;">Złóż zamówienie (pełny checkout)</label>
         </div>
     </div>
     
@@ -148,14 +171,14 @@
     <div class="form-group">
         <div class="checkbox-group">
             <input type="checkbox" name="is_active" id="is_active" {% if scenario.is_active %}checked{% endif %}>
-            <label for="is_active" style="margin: 0; text-transform: none;">Active</label>
+            <label for="is_active" style="margin: 0; text-transform: none;">AKTYWNY</label>
         </div>
     </div>
     {% endif %}
     
     <div class="button-group">
         <button type="submit">{% if mode == 'create' %}Create{% else %}Save{% endif %}</button>
-        <a href="{% if scenario %}/scenarios/{{ scenario.id }}{% else %}/scenarios{% endif %}" class="button button-secondary">Cancel</a>
+        <a href="{% if scenario %}/scenarios/{{ scenario.id }}{% else %}/scenarios{% endif %}" class="button button-secondary">Anuluj</a>
     </div>
 </form>
 {% endblock %}

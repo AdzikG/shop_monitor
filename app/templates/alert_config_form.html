@@ -4,6 +4,29 @@
 
 {% block extra_head %}
 <style>
+    .action-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.25rem 0.6rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .action-btn:hover {
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+    }
+    .action-btn.danger:hover {
+        border-color: var(--accent-red);
+        color: var(--accent-red);
+    }
+
     form {
         background: var(--bg-panel);
         border: 1px solid var(--border);
@@ -111,28 +134,28 @@
 
 {% block content %}
 <div style="margin-bottom: 2rem;">
-    <a href="{% if config %}/alert-configs/{{ config.id }}{% else %}/alert-configs{% endif %}" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Back</a>
+    <a href="{% if config %}/alert-configs/{{ config.id }}{% else %}/alert-configs{% endif %}" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Wróć</a>
 </div>
 
 <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">
-    {% if mode == 'create' %}New Alert Configuration{% else %}Edit Alert Configuration{% endif %}
+    {% if mode == 'create' %}Niewa konfiguracja alertu{% else %}Edytuj konfigurację alertu{% endif %}
 </h2>
 
 <form method="POST">
     <div class="form-group">
-        <label for="name">Alert Name *</label>
+        <label for="name">Nazwa alertu *</label>
         <input type="text" name="name" id="name" required value="{{ config.name if config else '' }}">
-        <div class="hint">Human-readable name for this alert</div>
+        <div class="hint">Czytelna nazwa alertu</div>
     </div>
     
     <div class="form-group">
-        <label for="business_rule">Business Rule *</label>
+        <label for="business_rule">Reguła biznesowa *</label>
         <input type="text" name="business_rule" id="business_rule" required value="{{ config.business_rule if config else '' }}">
-        <div class="hint">Unique identifier used in code (e.g., "cart.add_to_cart_failed")</div>
+        <div class="hint">Unikalny identyfikator używany w kodzie (e.g., "cart.add_to_cart_failed")</div>
     </div>
     
     <div class="form-group">
-        <label for="alert_type_id">Alert Type *</label>
+        <label for="alert_type_id">Typ alertu *</label>
         <select name="alert_type_id" id="alert_type_id" required>
             <option value="">Select type...</option>
             {% for type in alert_types %}
@@ -144,54 +167,54 @@
     </div>
     
     <div class="form-group">
-        <label for="description">Description</label>
+        <label for="description">Opis</label>
         <textarea name="description" id="description">{{ config.description if config else '' }}</textarea>
     </div>
     
-    <div class="section-title">Disabled Schedule (Optional)</div>
+    <div class="section-title">Harmonogram wyłączenia (opcjonalne)</div>
     
     <div class="form-row">
         <div class="form-group">
-            <label for="disabled_from_date">From Date</label>
+            <label for="disabled_from_date">Od daty</label>
             <input type="date" name="disabled_from_date" id="disabled_from_date" value="{{ config.disabled_from_date if config else '' }}">
         </div>
         <div class="form-group">
-            <label for="disabled_to_date">To Date</label>
+            <label for="disabled_to_date">Do daty</label>
             <input type="date" name="disabled_to_date" id="disabled_to_date" value="{{ config.disabled_to_date if config else '' }}">
         </div>
     </div>
     
     <div class="form-row">
         <div class="form-group">
-            <label for="disabled_from_time">From Time</label>
+            <label for="disabled_from_time">Od godziny</label>
             <input type="time" name="disabled_from_time" id="disabled_from_time" value="{{ config.disabled_from_time.strftime('%H:%M') if config and config.disabled_from_time else '' }}">
         </div>
         <div class="form-group">
-            <label for="disabled_to_time">To Time</label>
+            <label for="disabled_to_time">Do godziny</label>
             <input type="time" name="disabled_to_time" id="disabled_to_time" value="{{ config.disabled_to_time.strftime('%H:%M') if config and config.disabled_to_time else '' }}">
         </div>
     </div>
     
     <div class="hint" style="margin-top: -1rem; margin-bottom: 1.5rem;">
-        Alert will be disabled during the specified date/time range
+        Alert będzie wyłączony w podanym zakresie
     </div>
     
     <div class="form-group">
-        <label for="updated_by">Updated By</label>
+        <label for="updated_by">Zaktualizował</label>
         <input type="text" name="updated_by" id="updated_by" value="{{ config.updated_by if config else '' }}">
-        <div class="hint">Your name or identifier</div>
+        <div class="hint">Twoje imię lub login</div>
     </div>
     
     <div class="form-group">
         <div class="checkbox-group">
             <input type="checkbox" name="is_active" id="is_active" {% if not config or config.is_active %}checked{% endif %}>
-            <label for="is_active" style="margin: 0; text-transform: none;">Active (alert will be shown)</label>
+            <label for="is_active" style="margin: 0; text-transform: none;">Aktywny (alert będzie wyświetlany)</label>
         </div>
     </div>
     
     <div class="button-group">
         <button type="submit">{% if mode == 'create' %}Create{% else %}Save{% endif %}</button>
-        <a href="{% if config %}/alert-configs/{{ config.id }}{% else %}/alert-configs{% endif %}" class="button button-secondary">Cancel</a>
+        <a href="{% if config %}/alert-configs/{{ config.id }}{% else %}/alert-configs{% endif %}" class="button button-secondary">Anuluj</a>
     </div>
 </form>
 {% endblock %}

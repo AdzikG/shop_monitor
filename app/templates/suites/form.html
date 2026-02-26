@@ -3,6 +3,29 @@
 
 {% block extra_head %}
 <style>
+    .action-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.25rem 0.6rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .action-btn:hover {
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+    }
+    .action-btn.danger:hover {
+        border-color: var(--accent-red);
+        color: var(--accent-red);
+    }
+
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -179,7 +202,7 @@ textarea { min-height: 80px; resize: vertical; }
 
 {% block content %}
 <div style="margin-bottom:1.5rem;">
-    <a href="/suites" style="color:var(--text-secondary); text-decoration:none; font-size:11px;">← Suites</a>
+    <a href="/suites" style="color:var(--text-secondary); text-decoration:none; font-size:11px;">← Suity</a>
     <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase; margin-top:0.5rem;">{{ title }}</h2>
 </div>
 

@@ -4,6 +4,29 @@
 
 {% block extra_head %}
 <style>
+    .action-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.25rem 0.6rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .action-btn:hover {
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+    }
+    .action-btn.danger:hover {
+        border-color: var(--accent-red);
+        color: var(--accent-red);
+    }
+
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -183,7 +206,7 @@
     </a>
 
     <a href="/alerts?status=active&period=today" class="stat-card">
-        <div class="stat-label">Nowe dziś</div>
+        <div class="stat-label">Niewe dziś</div>
         <div class="stat-value" style="color: var(--accent-yellow);">{{ new_today }}</div>
         <div class="stat-sub">ostatnie 24h</div>
     </a>

@@ -4,17 +4,17 @@
 
 {% block content %}
 <div style="margin-bottom: 2rem;">
-    <a href="/scenarios" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Back to scenarios</a>
+    <a href="/scenarios" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Scenariusze</a>
 </div>
 
 <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-        <h1 style="font-size: 18px;">{{ scenario.name }}</h1>
+        <h1 style="font-size: 15px;">{{ scenario.name }}</h1>
         <div style="display: flex; gap: 0.5rem;">
             <a href="/scenarios/{{ scenario.id }}/edit" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 11px; text-transform: uppercase;">
                 Edit
             </a>
-            <form method="POST" action="/scenarios/{{ scenario.id }}/delete" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+            <form method="POST" action="/scenarios/{{ scenario.id }}/delete" style="display: inline;" onsubmit="return confirm('Na pewno?');">
                 <button type="submit" style="padding: 0.5rem 1rem; background: var(--accent-red); border: none; color: var(--bg-dark); font-size: 11px; text-transform: uppercase; cursor: pointer;">
                     Delete
                 </button>
@@ -28,38 +28,38 @@
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 12px;">
         <div>
-            <div class="stat-label">Scenario ID</div>
+            <div class="stat-label">ID scenariusza</div>
             <div class="mono">#{{ scenario.id }}</div>
         </div>
         <div>
             <div class="stat-label">Status</div>
             {% if scenario.is_active %}
-            <span class="status success">active</span>
+            <span class="status success">aktywny</span>
             {% else %}
-            <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">inactive</span>
+            <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
             {% endif %}
         </div>
         <div>
-            <div class="stat-label">Delivery</div>
+            <div class="stat-label">Dostawa</div>
             <div>{{ scenario.delivery_name or '—' }}</div>
         </div>
         <div>
-            <div class="stat-label">Payment</div>
+            <div class="stat-label">Płatność</div>
             <div>{{ scenario.payment_name or '—' }}</div>
         </div>
         <div>
-            <div class="stat-label">Postal Code</div>
+            <div class="stat-label">Kod pocztowy</div>
             <div class="mono">{{ scenario.postal_code or '—' }}</div>
         </div>
         <div>
-            <div class="stat-label">Should Order</div>
-            <div>{{ 'Yes' if scenario.should_order else 'No' }}</div>
+            <div class="stat-label">Składa zamówienie</div>
+            <div>{{ 'Tak' if scenario.should_order else 'Nie' }}</div>
         </div>
     </div>
     
     {% if scenario.listing_urls %}
     <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-        <div class="stat-label" style="margin-bottom: 0.5rem;">Listing URLs</div>
+        <div class="stat-label" style="margin-bottom: 0.5rem;">URLe listingu</div>
         {% for url in scenario.listing_urls %}
         <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 0.25rem; font-family: monospace;">
             {{ url }}
@@ -71,14 +71,14 @@
 
 {% if suite_links %}
 <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
-    Suites ({{ suite_links | length }})
+    Suity ({{ suite_links | length }})
 </h2>
 
 <table style="margin-bottom: 2rem;">
     <thead>
         <tr>
             <th>Suite</th>
-            <th>Order</th>
+            <th>Kolejność</th>
             <th>Status</th>
         </tr>
     </thead>
@@ -89,9 +89,9 @@
             <td class="mono">{{ link.order }}</td>
             <td>
                 {% if link.is_active %}
-                <span class="status success">active</span>
+                <span class="status success">aktywny</span>
                 {% else %}
-                <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">inactive</span>
+                <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
                 {% endif %}
             </td>
         </tr>
@@ -101,19 +101,19 @@
 {% endif %}
 
 <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
-    Recent Runs ({{ recent_runs | length }})
+    Ostatnie runy ({{ recent_runs | length }})
 </h2>
 
 {% if recent_runs %}
 <table>
     <thead>
         <tr>
-            <th>Run ID</th>
-            <th>Suite Run</th>
-            <th>Product</th>
+            <th>ID runu</th>
+            <th>Run suite</th>
+            <th>Produkt</th>
             <th>Status</th>
-            <th>Started</th>
-            <th>Duration</th>
+            <th>Rozpoczęto</th>
+            <th>Czas</th>
         </tr>
     </thead>
     <tbody>
@@ -137,7 +137,7 @@
 </table>
 {% else %}
 <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--text-secondary);">
-    No runs yet
+    Brak runów
 </div>
 {% endif %}
 {% endblock %}

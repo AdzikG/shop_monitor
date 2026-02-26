@@ -4,17 +4,17 @@
 
 {% block content %}
 <div style="margin-bottom: 2rem;">
-    <a href="/alert-configs" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Back to configs</a>
+    <a href="/alert-configs" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Konfiguracje</a>
 </div>
 
 <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-        <h1 style="font-size: 18px;">{{ config.name }}</h1>
+        <h1 style="font-size: 15px;">{{ config.name }}</h1>
         <div style="display: flex; gap: 0.5rem;">
             <a href="/alert-configs/{{ config.id }}/edit" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 11px; text-transform: uppercase;">
                 Edit
             </a>
-            <form method="POST" action="/alert-configs/{{ config.id }}/delete" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+            <form method="POST" action="/alert-configs/{{ config.id }}/delete" style="display: inline;" onsubmit="return confirm('Na pewno?');">
                 <button type="submit" style="padding: 0.5rem 1rem; background: var(--accent-red); border: none; color: var(--bg-dark); font-size: 11px; text-transform: uppercase; cursor: pointer;">
                     Delete
                 </button>
@@ -28,11 +28,11 @@
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 12px;">
         <div>
-            <div class="stat-label">Config ID</div>
+            <div class="stat-label">ID konfiguracji</div>
             <div class="mono">#{{ config.id }}</div>
         </div>
         <div>
-            <div class="stat-label">Business Rule</div>
+            <div class="stat-label">Reguła</div>
             <div class="mono" style="font-size: 11px;">{{ config.business_rule }}</div>
         </div>
         <div>
@@ -44,26 +44,26 @@
         <div>
             <div class="stat-label">Status</div>
             {% if config.is_active and not config.is_disabled_now() %}
-            <span class="status success">active</span>
+            <span class="status success">aktywny</span>
             {% elif config.is_disabled_now() %}
-            <span class="status running">scheduled off</span>
+            <span class="status running">wył. harmonogram</span>
             {% else %}
-            <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">inactive</span>
+            <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
             {% endif %}
         </div>
     </div>
     
     {% if config.disabled_from_date or config.disabled_from_time %}
     <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-        <div class="stat-label" style="margin-bottom: 0.5rem;">Disabled Schedule</div>
+        <div class="stat-label" style="margin-bottom: 0.5rem;">Harmonogram wyłączenia</div>
         {% if config.disabled_from_date %}
         <div style="font-size: 12px; margin-bottom: 0.25rem;">
-            <strong>Dates:</strong> {{ config.disabled_from_date }} — {{ config.disabled_to_date }}
+            <strong>Daty:</strong> {{ config.disabled_from_date }} — {{ config.disabled_to_date }}
         </div>
         {% endif %}
         {% if config.disabled_from_time %}
         <div style="font-size: 12px;">
-            <strong>Time:</strong> {{ config.disabled_from_time.strftime('%H:%M') }} — {{ config.disabled_to_time.strftime('%H:%M') }}
+            <strong>Godziny:</strong> {{ config.disabled_from_time.strftime('%H:%M') }} — {{ config.disabled_to_time.strftime('%H:%M') }}
         </div>
         {% endif %}
     </div>
@@ -71,7 +71,7 @@
     
     {% if config.updated_by %}
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary);">
-        Last updated by: {{ config.updated_by }}
+        Ostatnio zaktualizował: {{ config.updated_by }}
     </div>
     {% endif %}
 </div>

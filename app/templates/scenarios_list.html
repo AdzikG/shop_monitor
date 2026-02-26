@@ -16,11 +16,11 @@
     <thead>
         <tr>
             <th>ID</th>
-            <th>Name</th>
-            <th>Description</th>
-            <th>URLs</th>
+            <th>Nazwa</th>
+            <th>Opis</th>
+            <th>URLe</th>
             <th>Status</th>
-            <th>Actions</th>
+            <th>Akcje</th>
         </tr>
     </thead>
     <tbody>
@@ -38,14 +38,14 @@
             </td>
             <td>
                 {% if scenario.is_active %}
-                <span class="status success">active</span>
+                <span class="status success">aktywny</span>
                 {% else %}
-                <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">inactive</span>
+                <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
                 {% endif %}
             </td>
             <td>
-                <a href="/scenarios/{{ scenario.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.5rem;">Edit</a>
-                <a href="/scenarios/{{ scenario.id }}" style="color: var(--accent-green); text-decoration: none; font-size: 11px;">View</a>
+                <a href="/scenarios/{{ scenario.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.5rem;">Edytuj</a>
+                <a href="/scenarios/{{ scenario.id }}" style="color: var(--accent-green); text-decoration: none; font-size: 11px;">Podgląd</a>
             </td>
         </tr>
         {% endfor %}

@@ -4,6 +4,29 @@
 
 {% block extra_head %}
 <style>
+    .action-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.25rem 0.6rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .action-btn:hover {
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+    }
+    .action-btn.danger:hover {
+        border-color: var(--accent-red);
+        color: var(--accent-red);
+    }
+
     .modal {
         display: none;
         position: fixed;
@@ -61,20 +84,20 @@
 
 {% block content %}
 <div style="margin-bottom: 2rem;">
-    <a href="/suite-runs" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Back to suite runs</a>
+    <a href="/suite-runs" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Runy suite</a>
 </div>
 
 <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-        <h1 style="font-size: 18px;">{{ suite_run.suite.name }} @ {{ suite_run.environment.name }}</h1>
+        <h1 style="font-size: 15px;">{{ suite_run.suite.name }} @ {{ suite_run.environment.name }}</h1>
         <button onclick="showLogs()" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-size: 11px; text-transform: uppercase;">
-            Show Logs
+            Pokaż logi
         </button>
     </div>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; font-size: 12px;">
         <div>
-            <div class="stat-label">Suite Run ID</div>
+            <div class="stat-label">Suite ID runu</div>
             <div class="mono">#{{ suite_run.id }}</div>
         </div>
         <div>
@@ -82,15 +105,15 @@
             <span class="status {{ suite_run.status.value }}">{{ suite_run.status.value }}</span>
         </div>
         <div>
-            <div class="stat-label">Started</div>
+            <div class="stat-label">Rozpoczęto</div>
             <div class="mono">{{ suite_run.started_at | local_time }}</div>
         </div>
         <div>
-            <div class="stat-label">Duration</div>
+            <div class="stat-label">Czas</div>
             <div class="mono">{{ suite_run.duration_seconds | duration }}</div>
         </div>
         <div>
-            <div class="stat-label">Success / Failed / Total</div>
+            <div class="stat-label">Sukces / Błąd / Łącznie</div>
             <div class="mono">
                 <span style="color: var(--accent-green);">{{ suite_run.success_scenarios }}</span> /
                 <span style="color: var(--accent-red);">{{ suite_run.failed_scenarios }}</span> /
@@ -98,7 +121,7 @@
             </div>
         </div>
         <div>
-            <div class="stat-label">Total Alerts</div>
+            <div class="stat-label">Wszystkie alerty</div>
             <div class="mono">{{ suite_run.total_alerts }}</div>
         </div>
     </div>
@@ -106,17 +129,17 @@
 
 {% if alert_groups %}
 <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
-    Alert Groups ({{ alert_groups | length }})
+    Grupy alertów ({{ alert_groups | length }})
 </h2>
 
 <table style="margin-bottom: 2rem;">
     <thead>
         <tr>
-            <th>Business Rule</th>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Count</th>
-            <th>Scenarios</th>
+            <th>Reguła</th>
+            <th>Tytuł</th>
+            <th>Typ</th>
+            <th>Ilość</th>
+            <th>Scenariusze</th>
         </tr>
     </thead>
     <tbody>
@@ -142,18 +165,18 @@
 {% endif %}
 
 <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
-    Scenario Runs ({{ scenario_runs | length }})
+    Runy scenariuszy ({{ scenario_runs | length }})
 </h2>
 
 <table>
     <thead>
         <tr>
             <th>ID</th>
-            <th>Scenario</th>
-            <th>Product</th>
+            <th>Scenariusz</th>
+            <th>Produkt</th>
             <th>Status</th>
-            <th>Started</th>
-            <th>Duration</th>
+            <th>Rozpoczęto</th>
+            <th>Czas</th>
         </tr>
     </thead>
     <tbody>
@@ -181,13 +204,13 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
-                Suite Run #{{ suite_run.id }} Logs
+                Logi runu #{{ suite_run.id }}
             </h3>
             <span class="close" onclick="closeLogs()">&times;</span>
         </div>
         <div class="modal-body" id="logsContent">
             <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
-                Loading...
+                Ładowanie...
             </div>
         </div>
     </div>

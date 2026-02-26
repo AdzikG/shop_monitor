@@ -4,7 +4,7 @@
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
     <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">Suites</h2>
-    <a href="/suites/new" class="btn-primary">+ Nowa Suite</a>
+    <a href="/suites/new" class="btn-primary">+ Niewa Suite</a>
 </div>
 
 <table>
@@ -34,9 +34,9 @@
             <td class="mono">{{ suite.workers }}</td>
             <td>
                 {% if suite.is_active %}
-                    <span class="badge-green">ACTIVE</span>
+                    <span class="badge-green">AKTYWNY</span>
                 {% else %}
-                    <span class="badge-gray">INACTIVE</span>
+                    <span class="badge-gray">NIEAKTYWNY</span>
                 {% endif %}
             </td>
             <td>
