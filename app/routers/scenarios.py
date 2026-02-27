@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 import json
 
@@ -14,8 +14,9 @@ from app.templates import templates
 router = APIRouter(tags=["scenarios"])
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
 def _get_form_context(db: Session) -> dict:
-    """Pobiera słowniki i flagi potrzebne do formularza."""
     def get_values(system_name: str) -> list[str]:
         entry = db.query(Dictionary).filter_by(system_name=system_name, is_active=True).first()
         return entry.get_values() if entry else []
@@ -37,10 +38,7 @@ def _get_or_404(db: Session, scenario_id: int) -> Scenario:
 
 
 def _save_flags(db: Session, scenario_id: int, enabled_flag_ids: list[int], all_flags: list):
-    """Synchronizuje flagi scenariusza."""
-    # Usuń istniejące
     db.query(ScenarioFlag).filter_by(scenario_id=scenario_id).delete()
-    # Dodaj wszystkie flagi — zaznaczone jako enabled, reszta disabled
     for flag in all_flags:
         db.add(ScenarioFlag(
             scenario_id=scenario_id,
@@ -54,10 +52,71 @@ def _save_flags(db: Session, scenario_id: int, enabled_flag_ids: list[int], all_
 @router.get("/scenarios")
 async def scenarios_list(request: Request, db: Session = Depends(get_db)):
     scenarios = db.query(Scenario).order_by(Scenario.name).all()
+    ctx = _get_form_context(db)
+
+    scenario_flags_map = {
+        s.id: {sf.flag_id: sf.is_enabled for sf in s.flags}
+        for s in scenarios
+    }
+
     return templates.TemplateResponse("scenarios_list.html", {
         "request": request,
         "scenarios": scenarios,
+        "scenario_flags_map": scenario_flags_map,
+        **ctx,
     })
+
+
+# ── INLINE ────────────────────────────────────────────────────────────────────
+
+@router.post("/scenarios/inline-create")
+async def scenario_inline_create(request: Request, db: Session = Depends(get_db)):
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Nazwa jest wymagana")
+    scenario = Scenario(name=name, listing_urls=[], is_active=False)
+    db.add(scenario)
+    db.commit()
+    db.refresh(scenario)
+    return JSONResponse({"ok": True, "id": scenario.id})
+
+
+@router.post("/scenarios/{scenario_id}/inline")
+async def scenario_inline_update(scenario_id: int, request: Request, db: Session = Depends(get_db)):
+    scenario = _get_or_404(db, scenario_id)
+    body = await request.json()
+    field = body.get("field")
+    value = body.get("value")
+
+    allowed = {"name", "delivery_name", "payment_name", "basket_type",
+               "postal_code", "is_active", "is_order", "guarantee", "delivery_cutoff"}
+    if field not in allowed:
+        raise HTTPException(status_code=400, detail=f"Pole '{field}' niedozwolone")
+
+    if field in ("is_active", "is_order", "guarantee"):
+        setattr(scenario, field, bool(value))
+    else:
+        setattr(scenario, field, value or None)
+
+    db.commit()
+    return JSONResponse({"ok": True})
+
+
+@router.post("/scenarios/{scenario_id}/inline-flags")
+async def scenario_inline_flags(scenario_id: int, request: Request, db: Session = Depends(get_db)):
+    _get_or_404(db, scenario_id)
+    body = await request.json()
+    flag_id = int(body.get("flag_id"))
+    is_enabled = bool(body.get("is_enabled"))
+
+    sf = db.query(ScenarioFlag).filter_by(scenario_id=scenario_id, flag_id=flag_id).first()
+    if sf:
+        sf.is_enabled = is_enabled
+    else:
+        db.add(ScenarioFlag(scenario_id=scenario_id, flag_id=flag_id, is_enabled=is_enabled))
+    db.commit()
+    return JSONResponse({"ok": True})
 
 
 # ── CREATE ────────────────────────────────────────────────────────────────────
@@ -76,7 +135,6 @@ async def scenario_new_form(request: Request, db: Session = Depends(get_db)):
 @router.post("/scenarios/new")
 async def scenario_create(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
-
     urls = [u.strip() for u in form.get("listing_urls", "").split("\n") if u.strip()]
     selected_services = form.getlist("services")
 
@@ -145,7 +203,6 @@ async def scenario_edit_form(scenario_id: int, request: Request, db: Session = D
 async def scenario_update(scenario_id: int, request: Request, db: Session = Depends(get_db)):
     scenario = _get_or_404(db, scenario_id)
     form = await request.form()
-
     urls = [u.strip() for u in form.get("listing_urls", "").split("\n") if u.strip()]
     selected_services = form.getlist("services")
 
@@ -174,9 +231,7 @@ async def scenario_update(scenario_id: int, request: Request, db: Session = Depe
 
 @router.post("/scenarios/{scenario_id}/copy")
 async def scenario_copy(scenario_id: int, db: Session = Depends(get_db)):
-    """Kopiuje scenariusz — nowy z dopiskiem (kopia)."""
     original = _get_or_404(db, scenario_id)
-
     copy = Scenario(
         name=f"{original.name} (kopia)",
         description=original.description,
@@ -189,19 +244,12 @@ async def scenario_copy(scenario_id: int, db: Session = Depends(get_db)):
         postal_code=original.postal_code,
         is_order=original.is_order,
         guarantee=original.guarantee,
-        is_active=False,  # kopia domyślnie nieaktywna
+        is_active=False,
     )
     db.add(copy)
     db.flush()
-
-    # Kopiuj flagi
     for sf in original.flags:
-        db.add(ScenarioFlag(
-            scenario_id=copy.id,
-            flag_id=sf.flag_id,
-            is_enabled=sf.is_enabled,
-        ))
-
+        db.add(ScenarioFlag(scenario_id=copy.id, flag_id=sf.flag_id, is_enabled=sf.is_enabled))
     db.commit()
     return RedirectResponse(url=f"/scenarios/{copy.id}/edit", status_code=303)
 

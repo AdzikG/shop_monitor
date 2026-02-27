@@ -1,53 +1,704 @@
 {% extends "base.html" %}
+{% block title %}Scenariusze — Shop Monitor{% endblock %}
 
-{% block title %}Scenarios — Shop Monitor{% endblock %}
+{% block extra_head %}
+<style>
+    /* ── Layout ── */
+    .scenarios-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    /* ── Tabela ── */
+    .scenarios-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        font-size: 12px;
+    }
+
+    .scenarios-table th {
+        background: var(--bg-dark);
+        color: var(--text-secondary);
+        text-align: left;
+        padding: 0.6rem 0.75rem;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+
+    .scenarios-table td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+
+    .scenarios-table tr:last-child td { border-bottom: none; }
+    .scenarios-table tr:hover td { background: var(--bg-hover); }
+    .scenarios-table tr.new-row td { background: rgba(0,255,65,0.04); }
+
+    /* ── Filtr row ── */
+    .filter-row th {
+        padding: 0.4rem 0.5rem;
+        background: var(--bg-dark);
+        border-bottom: 2px solid var(--border);
+    }
+
+    .filter-input {
+        width: 100%;
+        box-sizing: border-box;
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 0.3rem 0.5rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 11px;
+    }
+
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--accent-green);
+    }
+
+    /* ── Inline edit ── */
+    .editable {
+        cursor: pointer;
+        min-width: 80px;
+        padding: 0.25rem 0.4rem;
+        border: 1px solid transparent;
+        transition: border-color 0.15s;
+        border-radius: 1px;
+    }
+
+    .editable:hover { border-color: var(--border); }
+    .editable:focus { outline: none; border-color: var(--accent-green); background: var(--bg-dark); }
+
+    .inline-select {
+        background: var(--bg-dark);
+        border: 1px solid var(--accent-green);
+        color: var(--text-primary);
+        padding: 0.25rem 0.4rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 12px;
+        width: 100%;
+    }
+
+    .inline-select:focus { outline: none; }
+
+    /* ── Flagi ── */
+    .flags-cell {
+        position: relative;
+    }
+
+    .flags-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        cursor: pointer;
+        min-width: 60px;
+        min-height: 22px;
+    }
+
+    .flag-badge {
+        display: inline-block;
+        padding: 0.1rem 0.4rem;
+        background: rgba(0,255,65,0.1);
+        border: 1px solid rgba(0,255,65,0.3);
+        color: var(--accent-green);
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    .flag-badge.off {
+        background: none;
+        border-color: var(--border);
+        color: var(--text-secondary);
+    }
+
+    .flags-empty {
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    /* ── Flags dropdown ── */
+    .flags-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 200;
+        background: var(--bg-panel);
+        border: 1px solid var(--accent-green);
+        min-width: 220px;
+        max-height: 280px;
+        overflow-y: auto;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .flags-dropdown.open { display: block; }
+
+    .flags-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+
+    .flags-dropdown-item:last-child { border-bottom: none; }
+    .flags-dropdown-item:hover { background: var(--bg-hover); }
+
+    .flags-dropdown-item input[type="checkbox"] {
+        accent-color: var(--accent-green);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .flags-dropdown-item-name { font-size: 12px; }
+    .flags-dropdown-item-key {
+        margin-left: auto;
+        font-size: 10px;
+        color: var(--text-secondary);
+        font-family: 'Fira Code', monospace;
+    }
+
+    /* ── Toggle status ── */
+    .status-toggle {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    /* ── Akcje ── */
+    .row-actions { white-space: nowrap; }
+
+    .act-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 11px;
+        cursor: pointer;
+        font-family: 'Fira Code', monospace;
+        padding: 0.2rem 0.4rem;
+        text-decoration: none;
+        display: inline-block;
+        transition: color 0.15s;
+    }
+
+    .act-btn:hover { color: var(--text-primary); }
+    .act-btn.danger:hover { color: var(--accent-red); }
+    .act-btn.green { color: var(--accent-green); }
+
+    /* ── Nowy wiersz ── */
+    .new-row-input {
+        background: var(--bg-dark);
+        border: 1px solid var(--accent-green);
+        color: var(--text-primary);
+        padding: 0.3rem 0.5rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .new-row-input:focus { outline: none; }
+
+    /* ── Save indicator ── */
+    .saving { opacity: 0.5; }
+    .saved-flash { animation: savedFlash 0.6s ease; }
+    @keyframes savedFlash {
+        0%   { background: rgba(0,255,65,0.2); }
+        100% { background: transparent; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+
+<div class="scenarios-toolbar">
     <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
         Scenariusze
     </h2>
-    <a href="/scenarios/new" style="padding: 0.5rem 1rem; background: var(--accent-green); color: var(--bg-dark); text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
-        + Dodaj
-    </a>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <span id="filter-count" style="font-size: 11px; color: var(--text-secondary);"></span>
+        <button onclick="addNewRow()"
+                style="padding: 0.4rem 1rem; background: var(--accent-green); color: var(--bg-dark); border: none; font-family: 'Fira Code', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;">
+            + Nowy
+        </button>
+    </div>
 </div>
 
-<table>
+<table class="scenarios-table" id="scenarios-table">
     <thead>
+        {# Nagłówki #}
         <tr>
-            <th>ID</th>
+            <th style="width: 45px;">ID</th>
             <th>Nazwa</th>
-            <th>Opis</th>
-            <th>URLe</th>
-            <th>Status</th>
-            <th>Akcje</th>
+            <th style="width: 180px;">Flagi</th>
+            <th style="width: 140px;">Typ koszyka</th>
+            <th style="width: 150px;">Dostawa</th>
+            <th style="width: 100px;">Kod poczt.</th>
+            <th style="width: 150px;">Płatność</th>
+            <th style="width: 80px;">Status</th>
+            <th style="width: 100px;">Akcje</th>
+        </tr>
+        {# Filtry #}
+        <tr class="filter-row" id="filter-row">
+            <th></th>
+            <th><input class="filter-input" data-col="1" placeholder="Szukaj..."></th>
+            <th></th>
+            <th>
+                <select class="filter-input" data-col="3">
+                    <option value="">Wszystkie</option>
+                    {% for v in basket_types %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+                </select>
+            </th>
+            <th>
+                <select class="filter-input" data-col="4">
+                    <option value="">Wszystkie</option>
+                    {% for v in deliveries %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+                </select>
+            </th>
+            <th><input class="filter-input" data-col="5" placeholder="Kod..."></th>
+            <th>
+                <select class="filter-input" data-col="6">
+                    <option value="">Wszystkie</option>
+                    {% for v in payments %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+                </select>
+            </th>
+            <th>
+                <select class="filter-input" data-col="7">
+                    <option value="">Wszystkie</option>
+                    <option value="aktywny">aktywny</option>
+                    <option value="nieaktywny">nieaktywny</option>
+                </select>
+            </th>
+            <th></th>
         </tr>
     </thead>
-    <tbody>
-        {% for scenario in scenarios %}
-        <tr>
-            <td class="mono">#{{ scenario.id }}</td>
+    <tbody id="scenarios-tbody">
+        {% for s in scenarios %}
+        {% set s_flags = scenario_flags_map.get(s.id, {}) %}
+        <tr data-id="{{ s.id }}">
+            {# ID #}
+            <td class="mono" style="font-size: 11px; color: var(--text-secondary);">#{{ s.id }}</td>
+
+            {# Nazwa #}
             <td>
-                <a href="/scenarios/{{ scenario.id }}" class="link">{{ scenario.name }}</a>
+                <span class="editable"
+                      contenteditable="true"
+                      data-field="name"
+                      data-id="{{ s.id }}"
+                      onblur="saveField(this)"
+                      onkeydown="handleKey(event, this)">{{ s.name }}</span>
             </td>
-            <td style="max-width: 300px; font-size: 11px; color: var(--text-secondary);">
-                {{ scenario.description or '—' }}
+
+            {# Flagi #}
+            <td class="flags-cell">
+                <div class="flags-badges" onclick="toggleFlagsDropdown(event, {{ s.id }})">
+                    {% set enabled_count = namespace(n=0) %}
+                    {% for flag in all_flags %}
+                        {% if s_flags.get(flag.id) %}
+                            {% set enabled_count.n = enabled_count.n + 1 %}
+                            <span class="flag-badge">{{ flag.name }}</span>
+                        {% endif %}
+                    {% endfor %}
+                    {% if enabled_count.n == 0 %}
+                    <span class="flags-empty">—</span>
+                    {% endif %}
+                </div>
+                <div class="flags-dropdown" id="flags-dd-{{ s.id }}">
+                    {% for flag in all_flags %}
+                    <label class="flags-dropdown-item">
+                        <input type="checkbox"
+                               data-scenario="{{ s.id }}"
+                               data-flag="{{ flag.id }}"
+                               {% if s_flags.get(flag.id) %}checked{% endif %}
+                               onchange="saveFlag(this)">
+                        <span class="flags-dropdown-item-name">{{ flag.display_name }}</span>
+                        <span class="flags-dropdown-item-key">{{ flag.name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
             </td>
-            <td class="mono" style="font-size: 10px;">
-                {{ scenario.listing_urls | length }} URL(s)
+
+            {# Typ koszyka #}
+            <td data-value="{{ s.basket_type or '' }}">
+                <select class="inline-select"
+                        data-field="basket_type"
+                        data-id="{{ s.id }}"
+                        onchange="saveSelect(this)">
+                    <option value="">—</option>
+                    {% for v in basket_types %}
+                    <option value="{{ v }}" {% if s.basket_type == v %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
             </td>
+
+            {# Dostawa #}
+            <td data-value="{{ s.delivery_name or '' }}">
+                <select class="inline-select"
+                        data-field="delivery_name"
+                        data-id="{{ s.id }}"
+                        onchange="saveSelect(this)">
+                    <option value="">—</option>
+                    {% for v in deliveries %}
+                    <option value="{{ v }}" {% if s.delivery_name == v %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+
+            {# Kod pocztowy #}
             <td>
-                {% if scenario.is_active %}
-                <span class="status success">aktywny</span>
-                {% else %}
-                <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
-                {% endif %}
+                <span class="editable"
+                      contenteditable="true"
+                      data-field="postal_code"
+                      data-id="{{ s.id }}"
+                      onblur="saveField(this)"
+                      onkeydown="handleKey(event, this)">{{ s.postal_code or '' }}</span>
             </td>
+
+            {# Płatność #}
+            <td data-value="{{ s.payment_name or '' }}">
+                <select class="inline-select"
+                        data-field="payment_name"
+                        data-id="{{ s.id }}"
+                        onchange="saveSelect(this)">
+                    <option value="">—</option>
+                    {% for v in payments %}
+                    <option value="{{ v }}" {% if s.payment_name == v %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+
+            {# Status #}
             <td>
-                <a href="/scenarios/{{ scenario.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.5rem;">Edytuj</a>
+                <span class="status-toggle" onclick="toggleStatus(this, {{ s.id }})">
+                    {% if s.is_active %}
+                    <span class="status success" data-active="true">aktywny</span>
+                    {% else %}
+                    <span class="status" data-active="false"
+                          style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
+                    {% endif %}
+                </span>
+            </td>
+
+            {# Akcje #}
+            <td class="row-actions">
+                <a href="/scenarios/{{ s.id }}" class="act-btn" title="Podgląd">☰</a>
+                <a href="/scenarios/{{ s.id }}/edit" class="act-btn" title="Edytuj">✎</a>
+                <form method="POST" action="/scenarios/{{ s.id }}/copy" style="display:inline;">
+                    <button type="submit" class="act-btn green" title="Kopiuj">⎘</button>
+                </form>
+                <form method="POST" action="/scenarios/{{ s.id }}/delete" style="display:inline;"
+                      onsubmit="return confirm('Usunąć {{ s.name }}?');">
+                    <button type="submit" class="act-btn danger" title="Usuń">✕</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr id="empty-row">
+            <td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                Brak scenariuszy. Kliknij <strong>+ Nowy</strong> aby dodać pierwszy.
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+// ── Dane słowników (dla nowych wierszy) ───────────────────────────────────────
+const DELIVERIES   = {{ deliveries | tojson }};
+const PAYMENTS     = {{ payments | tojson }};
+const BASKET_TYPES = {{ basket_types | tojson }};
+const ALL_FLAGS    = {{ all_flags | map(attribute='id') | list | tojson }};
+const FLAG_DATA    = {
+    {% for f in all_flags %}
+    {{ f.id }}: { name: {{ f.name | tojson }}, display: {{ f.display_name | tojson }} },
+    {% endfor %}
+};
+
+// ── PIN helper ───────────────────────────────────────────────────────────────
+async function ensurePin() {
+    const check = await fetch('/auth/check-session').then(r => r.json()).catch(() => ({ok: false}));
+    if (check.ok) return true;
+    return new Promise(resolve => {
+        openPinModal({
+            _pinVerified: false,
+            submit() { resolve(true); },
+        });
+        // Monkey-patch: po zatwierdzeniu PIN resolve(true)
+        const origClose = window.closePinModal;
+        const origSubmit = window.submitPin;
+        window.submitPin = async function() {
+            const pin = document.getElementById('pin-input').value.trim();
+            if (!pin) return;
+            const res = await fetch('/auth/verify-pin', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `pin=${encodeURIComponent(pin)}`
+            });
+            const data = await res.json();
+            if (data.ok) {
+                closePinModal();
+                window.submitPin = origSubmit;
+                resolve(true);
+            } else {
+                document.getElementById('pin-error').textContent = data.error || 'Nieprawidłowy PIN';
+                document.getElementById('pin-input').value = '';
+                document.getElementById('pin-input').focus();
+            }
+        };
+        document.getElementById('pin-input').addEventListener('keydown', function handler(e) {
+            if (e.key === 'Enter') { e.stopImmediatePropagation(); window.submitPin(); }
+        }, {once: true});
+    });
+}
+
+async function inlineFetch(url, body) {
+    const ok = await ensurePin();
+    if (!ok) return;
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+}
+
+// ── Inline save field ─────────────────────────────────────────────────────────
+async function saveField(el) {
+    const id    = el.dataset.id;
+    const field = el.dataset.field;
+    const value = el.innerText.trim();
+
+    el.classList.add('saving');
+    try {
+        await inlineFetch(`/scenarios/${id}/inline`, { field, value });
+        el.classList.remove('saving');
+        flashSaved(el.closest('td'));
+    } catch(e) {
+        el.classList.remove('saving');
+    }
+}
+
+function handleKey(e, el) {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.blur(); }
+}
+
+// ── Inline save select ────────────────────────────────────────────────────────
+async function saveSelect(el) {
+    const id    = el.dataset.id;
+    const field = el.dataset.field;
+    const value = el.value;
+
+    await inlineFetch(`/scenarios/${id}/inline`, { field, value });
+    // aktualizuj data-value na td dla filtrów
+    el.closest('td').dataset.value = value;
+    flashSaved(el.closest('td'));
+}
+
+// ── Toggle status ─────────────────────────────────────────────────────────────
+async function toggleStatus(wrapper, id) {
+    const badge = wrapper.querySelector('[data-active]');
+    const current = badge.dataset.active === 'true';
+    const newVal = !current;
+
+    await inlineFetch(`/scenarios/${id}/inline`, { field: 'is_active', value: newVal });
+
+    badge.dataset.active = newVal ? 'true' : 'false';
+    if (newVal) {
+        badge.className = 'status success';
+        badge.textContent = 'aktywny';
+        badge.style = '';
+    } else {
+        badge.className = 'status';
+        badge.textContent = 'nieaktywny';
+        badge.style = 'border-color: var(--text-secondary); color: var(--text-secondary);';
+    }
+    flashSaved(wrapper.closest('td'));
+}
+
+// ── Flagi dropdown ────────────────────────────────────────────────────────────
+let openDropdownId = null;
+
+function toggleFlagsDropdown(e, id) {
+    e.stopPropagation();
+    const dd = document.getElementById(`flags-dd-${id}`);
+
+    if (openDropdownId && openDropdownId !== id) {
+        document.getElementById(`flags-dd-${openDropdownId}`)?.classList.remove('open');
+    }
+
+    dd.classList.toggle('open');
+    openDropdownId = dd.classList.contains('open') ? id : null;
+}
+
+document.addEventListener('click', () => {
+    if (openDropdownId) {
+        document.getElementById(`flags-dd-${openDropdownId}`)?.classList.remove('open');
+        openDropdownId = null;
+    }
+});
+
+async function saveFlag(cb) {
+    const scenarioId = cb.dataset.scenario;
+    const flagId     = cb.dataset.flag;
+    const isEnabled  = cb.checked;
+
+    await inlineFetch(`/scenarios/${scenarioId}/inline-flags`, { flag_id: flagId, is_enabled: isEnabled });
+
+    // Odśwież badges w wierszu
+    refreshFlagBadges(scenarioId);
+}
+
+function refreshFlagBadges(scenarioId) {
+    const dd = document.getElementById(`flags-dd-${scenarioId}`);
+    const badges = dd.closest('td').querySelector('.flags-badges');
+    const checkboxes = dd.querySelectorAll('input[type="checkbox"]');
+
+    badges.innerHTML = '';
+    let any = false;
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            const span = document.createElement('span');
+            span.className = 'flag-badge';
+            span.textContent = FLAG_DATA[cb.dataset.flag]?.name || cb.dataset.flag;
+            badges.appendChild(span);
+            any = true;
+        }
+    });
+    if (!any) {
+        badges.innerHTML = '<span class="flags-empty">—</span>';
+    }
+}
+
+// ── Nowy wiersz ───────────────────────────────────────────────────────────────
+function addNewRow() {
+    // Usuń stary nowy wiersz jeśli jest
+    document.getElementById('new-row')?.remove();
+    document.getElementById('empty-row')?.remove();
+
+    const tbody = document.getElementById('scenarios-tbody');
+    const tr = document.createElement('tr');
+    tr.id = 'new-row';
+    tr.className = 'new-row';
+
+    tr.innerHTML = `
+        <td class="mono" style="color: var(--text-secondary); font-size: 11px;">nowy</td>
+        <td><input class="new-row-input" id="new-name" placeholder="Nazwa scenariusza..." autofocus></td>
+        <td>—</td>
+        <td>${makeSelectHTML('delivery_name', DELIVERIES, '')}</td>
+        <td><input class="new-row-input" id="new-postal" placeholder="00-000" style="width:80px;"></td>
+        <td>${makeSelectHTML('payment_name', PAYMENTS, '')}</td>
+        <td>${makeSelectHTML('basket_type', BASKET_TYPES, '')}</td>
+        <td><span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span></td>
+        <td>
+            <button onclick="saveNewRow()" class="act-btn green">Zapisz</button>
+            <button onclick="cancelNewRow()" class="act-btn danger">✕</button>
+        </td>
+    `;
+
+    tbody.insertBefore(tr, tbody.firstChild);
+    document.getElementById('new-name').focus();
+}
+
+function makeSelectHTML(field, options, selected) {
+    let html = `<select class="inline-select" data-field="${field}"><option value="">—</option>`;
+    options.forEach(v => {
+        html += `<option value="${v}" ${v === selected ? 'selected' : ''}>${v}</option>`;
+    });
+    html += '</select>';
+    return html;
+}
+
+async function saveNewRow() {
+    const name = document.getElementById('new-name').value.trim();
+    if (!name) {
+        document.getElementById('new-name').focus();
+        return;
+    }
+
+    const res = await inlineFetch('/scenarios/inline-create', { name });
+    const data = await res.json();
+
+    if (data.ok) {
+        // Zapisz dodatkowe pola
+        const row = document.getElementById('new-row');
+        const selects = row.querySelectorAll('select[data-field]');
+        for (const sel of selects) {
+            if (sel.value) {
+                await inlineFetch(`/scenarios/${data.id}/inline`, { field: sel.dataset.field, value: sel.value });
+            }
+        }
+        const postal = document.getElementById('new-postal')?.value?.trim();
+        if (postal) {
+            await fetch(`/scenarios/${data.id}/inline`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field: 'postal_code', value: postal }),
+            });
+        }
+        window.location.reload();
+    }
+}
+
+function cancelNewRow() {
+    document.getElementById('new-row')?.remove();
+}
+
+// ── Filtrowanie ───────────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-input').forEach(input => {
+    input.addEventListener('input', applyFilters);
+    input.addEventListener('change', applyFilters);
+});
+
+function applyFilters() {
+    const filters = {};
+    document.querySelectorAll('.filter-input[data-col]').forEach(f => {
+        if (f.value.trim()) filters[f.dataset.col] = f.value.trim().toLowerCase();
+    });
+
+    const rows = document.querySelectorAll('#scenarios-tbody tr:not(#new-row):not(#empty-row)');
+    let visible = 0;
+
+    rows.forEach(row => {
+        let show = true;
+        for (const [col, val] of Object.entries(filters)) {
+            const td = row.cells[parseInt(col)];
+            if (!td) continue;
+            // Użyj data-value jeśli dostępne (td z selectami), inaczej innerText
+            const text = (td.dataset.value !== undefined ? td.dataset.value : td.innerText).toLowerCase();
+            if (!text.includes(val)) { show = false; break; }
+        }
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    const total = rows.length;
+    const countEl = document.getElementById('filter-count');
+    if (Object.keys(filters).length > 0) {
+        countEl.textContent = `${visible} / ${total}`;
+    } else {
+        countEl.textContent = '';
+    }
+}
+
+// ── Flash saved ───────────────────────────────────────────────────────────────
+function flashSaved(td) {
+    if (!td) return;
+    td.classList.remove('saved-flash');
+    void td.offsetWidth;
+    td.classList.add('saved-flash');
+}
+</script>
+
 {% endblock %}
