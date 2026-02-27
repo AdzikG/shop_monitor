@@ -523,9 +523,9 @@ async function toggleStatus(wrapper, id) {
         badge.textContent = 'aktywny';
         badge.style = '';
     } else {
-        badge.className = 'status';
+        badge.className = 'status inactive';
         badge.textContent = 'nieaktywny';
-        badge.style = 'border-color: var(--text-secondary); color: var(--text-secondary);';
+        badge.style = '';
     }
     flashSaved(wrapper.closest('td'));
 }
@@ -669,6 +669,7 @@ function applyFilters() {
     document.querySelectorAll('.filter-input[data-col]').forEach(f => {
         if (f.value.trim()) filters[f.dataset.col] = f.value.trim().toLowerCase();
     });
+    console.log(filters)
 
     const rows = document.querySelectorAll('#scenarios-tbody tr:not(#new-row):not(#empty-row)');
     let visible = 0;
@@ -682,7 +683,7 @@ function applyFilters() {
             if (td.dataset.value !== undefined) {
                 if (td.dataset.value.toLowerCase() !== val) { show = false; break; }
             } else {
-                if (!td.innerText.toLowerCase().includes(val)) { show = false; break; }
+                if (td.innerText.toLowerCase().trim() !== (val)) { show = false; break; }
             }
         }
         row.style.display = show ? '' : 'none';
