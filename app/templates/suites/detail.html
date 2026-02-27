@@ -59,7 +59,7 @@
         {% if suite.is_active %}
             <span class="status success">AKTYWNY</span>
         {% else %}
-            <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">NIEAKTYWNY</span>
+            <span class="status inactive">NIEAKTYWNY</span>
         {% endif %}
         <a href="/suites/{{ suite.id }}/edit" style="padding: 0.4rem 0.9rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Edytuj</a>
         <form method="post" action="/suites/{{ suite.id }}/delete" style="display:inline"

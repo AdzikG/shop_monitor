@@ -35,7 +35,7 @@
     }
 
     .scenarios-table td {
-        padding: 0.5rem 0.75rem;
+        padding: 8px 8px;
         border-bottom: 1px solid var(--border);
         vertical-align: middle;
     }
@@ -46,7 +46,7 @@
 
     /* ── Filtr row ── */
     .filter-row th {
-        padding: 0.4rem 0.5rem;
+        padding: 8px 8px;
         background: var(--bg-dark);
         border-bottom: 2px solid var(--border);
     }
@@ -57,9 +57,10 @@
         background: var(--bg-panel);
         border: 1px solid var(--border);
         color: var(--text-primary);
-        padding: 0.3rem 0.5rem;
+        padding: 8px 6px;
         font-family: 'Fira Code', monospace;
-        font-size: 11px;
+        font-size: 12px;
+        font-weight: 700;
     }
 
     .filter-input:focus {
@@ -71,7 +72,7 @@
     .editable {
         cursor: pointer;
         min-width: 80px;
-        padding: 0.25rem 0.4rem;
+        padding: 8px 12px;
         border: 1px solid transparent;
         transition: border-color 0.15s;
         border-radius: 1px;
@@ -82,15 +83,18 @@
 
     .inline-select {
         background: var(--bg-dark);
-        border: 1px solid var(--accent-green);
         color: var(--text-primary);
-        padding: 0.25rem 0.4rem;
+        padding: 4px 6px;
         font-family: 'Fira Code', monospace;
         font-size: 12px;
         width: 100%;
+        border-color: var(--border);
     }
 
-    .inline-select:focus { outline: none; }
+    .inline-select:focus { 
+        outline: none; 
+        border-color: var(--accent-green); 
+    }
 
     /* ── Flagi ── */
     .flags-cell {
@@ -240,15 +244,15 @@
     <thead>
         {# Nagłówki #}
         <tr>
-            <th style="width: 45px;">ID</th>
+            <th style="width: 52px;">ID</th>
             <th>Nazwa</th>
-            <th style="width: 180px;">Flagi</th>
+            <th style="width: 220px;">Flagi</th>
             <th style="width: 140px;">Typ koszyka</th>
             <th style="width: 150px;">Dostawa</th>
             <th style="width: 100px;">Kod poczt.</th>
             <th style="width: 150px;">Płatność</th>
-            <th style="width: 80px;">Status</th>
-            <th style="width: 100px;">Akcje</th>
+            <th style="width: 120px;">Status</th>
+            <th style="width: 140px;">Akcje</th>
         </tr>
         {# Filtry #}
         <tr class="filter-row" id="filter-row">
@@ -385,8 +389,7 @@
                     {% if s.is_active %}
                     <span class="status success" data-active="true">aktywny</span>
                     {% else %}
-                    <span class="status" data-active="false"
-                          style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
+                    <span class="status inactive" data-active="false">nieaktywny</span>
                     {% endif %}
                 </span>
             </td>
@@ -675,9 +678,12 @@ function applyFilters() {
         for (const [col, val] of Object.entries(filters)) {
             const td = row.cells[parseInt(col)];
             if (!td) continue;
-            // Użyj data-value jeśli dostępne (td z selectami), inaczej innerText
-            const text = (td.dataset.value !== undefined ? td.dataset.value : td.innerText).toLowerCase();
-            if (!text.includes(val)) { show = false; break; }
+            // Selekt — exact match; tekst — contains
+            if (td.dataset.value !== undefined) {
+                if (td.dataset.value.toLowerCase() !== val) { show = false; break; }
+            } else {
+                if (!td.innerText.toLowerCase().includes(val)) { show = false; break; }
+            }
         }
         row.style.display = show ? '' : 'none';
         if (show) visible++;

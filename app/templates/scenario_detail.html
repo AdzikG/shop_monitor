@@ -56,7 +56,7 @@
                     {% if scenario.is_active %}
                     <span class="status success">aktywny</span>
                     {% else %}
-                    <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
+                    <span class="status inactive">nieaktywny</span>
                     {% endif %}
                 </div>
                 <div>
@@ -140,7 +140,7 @@
                         {% if sf.is_enabled %}
                         <span class="status success" style="font-size: 9px;">ON</span>
                         {% else %}
-                        <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary); font-size: 9px;">OFF</span>
+                        <span class="status inactive" style="font-size: 9px;">OFF</span>
                         {% endif %}
                     </div>
                 </div>
@@ -176,7 +176,7 @@
                 {% if link.is_active %}
                 <span class="status success">aktywny</span>
                 {% else %}
-                <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
+                <span class="status inactive">nieaktywny</span>
                 {% endif %}
             </td>
         </tr>

@@ -281,8 +281,8 @@ textarea { min-height: 80px; resize: vertical; }
                         <div class="scenario-item-desc">{{ scenario.description }}</div>
                         {% endif %}
                     </div>
-                    <span class="scenario-item-tag {% if not scenario.is_active %}inactive{% endif %}">
-                        {{ 'ACTIVE' if scenario.is_active else 'INACTIVE' }}
+                    <span class="status success {% if not scenario.is_active %}inactive{% endif %}">
+                        {{ 'AKTYWNY' if scenario.is_active else 'NIEAKTYWNY' }}
                     </span>
                 </div>
                 {% else %}
