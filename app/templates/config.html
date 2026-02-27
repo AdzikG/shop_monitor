@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Konfiguracja — Shop Monitor{% endblock %}
+
+{% block extra_head %}
+<style>
+    .config-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .config-card {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        padding: 1.5rem;
+        text-decoration: none;
+        display: block;
+        transition: border-color 0.15s;
+    }
+
+    .config-card:hover {
+        border-color: var(--accent-green);
+    }
+
+    .config-card-icon {
+        font-size: 22px;
+        margin-bottom: 0.75rem;
+        line-height: 1;
+    }
+
+    .config-card-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.4rem;
+    }
+
+    .config-card-desc {
+        font-size: 11px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .config-card-count {
+        margin-top: 1rem;
+        font-size: 10px;
+        color: var(--accent-green);
+        letter-spacing: 1px;
+    }
+
+    .section-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-secondary);
+        margin-top: 2.5rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .section-label:first-of-type {
+        margin-top: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.25rem;">
+    Konfiguracja
+</h2>
+<p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2rem;">
+    Zarządzanie słownikami, flagami i innymi ustawieniami systemu.
+</p>
+
+<div class="config-grid">
+
+    <a href="/suites" class="config-card">
+        <div class="config-card-title">Suites</div>
+        <div class="config-card-desc">
+            Zestawy scenariuszy uruchamiane razem. Zarządzaj kolejnością, workerami i przypisaniem scenariuszy.
+        </div>
+        <div class="config-card-count">{{ suite_count }} suites</div>
+    </a>
+
+    <a href="/scenarios" class="config-card">
+        <div class="config-card-title">Scenariusze</div>
+        <div class="config-card-desc">
+            Pojedyncze testy e-commerce — konfiguracja dostawy, płatności, koszyka i flag zachowania.
+        </div>
+        <div class="config-card-count">{{ scenario_count }} scenariuszy</div>
+    </a>
+
+    <a href="/dictionaries" class="config-card">
+        <div class="config-card-title">Słowniki</div>
+        <div class="config-card-desc">
+            Listy wartości dla pól scenariuszy — formy dostawy, płatności, typy koszyka, usługi dodatkowe.
+        </div>
+        <div class="config-card-count">{{ dict_count }} wpisów</div>
+    </a>
+
+    <a href="/flags" class="config-card">
+        <div class="config-card-title">Flagi testów</div>
+        <div class="config-card-desc">
+            Globalne flagi zachowania testów — logowanie, rodzaj konta, adres, opcje koszyka.
+        </div>
+        <div class="config-card-count">{{ flag_count }} flag</div>
+    </a>
+
+    <a href="/alert-configs" class="config-card">
+        <div class="config-card-title">Konfiguracja alertów</div>
+        <div class="config-card-desc">
+            Reguły biznesowe alertów — tytuły, typy, harmonogramy wyłączeń.
+        </div>
+        <div class="config-card-count">{{ alert_config_count }} konfiguracji</div>
+    </a>
+
+</div>
+
+{% endblock %}

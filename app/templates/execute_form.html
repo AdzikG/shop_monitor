@@ -189,9 +189,9 @@
 {% endblock %}
 
 {% block content %}
-<h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">
-    Run
-</h2>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; height: 32px;">
+    <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">Uruchom Run</h2>
+</div>
 
 <div class="run-grid">
 
@@ -221,14 +221,14 @@
             </div>
 
             <div class="form-group">
-                <label for="workers_override">Workers override</label>
+                <label for="workers_override">Workers</label>
                 <input type="number" name="workers_override" id="workers_override"
                        min="1" max="10" placeholder="Domyślne z suite">
             </div>
 
             <div class="form-group">
                 <div class="checkbox-group">
-                    <input type="checkbox" name="headless" id="headless" value="true">
+                    <input type="checkbox" name="headless" id="headless" value="true" checked>
                     <label for="headless">Headless (bez okna przeglądarki)</label>
                 </div>
             </div>
@@ -282,13 +282,13 @@
 
             <div class="form-group">
                 <div class="checkbox-group">
-                    <input type="checkbox" name="headless" id="manual_headless" value="true">
+                    <input type="checkbox" name="headless" id="manual_headless" value="true" checked>
                     <label for="manual_headless">Headless (bez okna przeglądarki)</label>
                 </div>
             </div>
 
             <button type="submit" class="btn-run" id="manual-submit-btn" disabled>
-                🔧 Run Manual
+                ▶ Run Manual
             </button>
 
             <div class="info-box">

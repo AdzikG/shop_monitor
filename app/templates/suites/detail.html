@@ -47,7 +47,7 @@
 {% block content %}
 
 <!-- Header -->
-<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem;">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
     <div>
         <a href="/suites" style="color:var(--text-secondary); text-decoration:none; font-size:11px;">← Suity</a>
         <h2 style="font-size:16px; letter-spacing:1px; margin-top:0.4rem;">{{ suite.name }}</h2>
@@ -57,14 +57,14 @@
     </div>
     <div style="display:flex; gap:0.5rem; align-items:center;">
         {% if suite.is_active %}
-            <span class="badge-green">AKTYWNY</span>
+            <span class="status success">AKTYWNY</span>
         {% else %}
-            <span class="badge-gray">NIEAKTYWNY</span>
+            <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">NIEAKTYWNY</span>
         {% endif %}
-        <a href="/suites/{{ suite.id }}/edit" class="btn-sm">✏️ Edytuj</a>
+        <a href="/suites/{{ suite.id }}/edit" style="padding: 0.4rem 0.9rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Edytuj</a>
         <form method="post" action="/suites/{{ suite.id }}/delete" style="display:inline"
               onsubmit="return confirm('Dezaktywować suite {{ suite.name }}?')">
-            <button type="submit" class="btn-sm btn-danger">Usuń</button>
+            <button type="submit" style="padding: 0.4rem 0.9rem; background: none; border: 1px solid var(--accent-red); color: var(--accent-red); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; font-family: inherit;">Usuń</button>
         </form>
     </div>
 </div>

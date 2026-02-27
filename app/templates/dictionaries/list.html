@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Słowniki — Shop Monitor{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
+        Słowniki
+    </h2>
+    <a href="/dictionaries/new" style="padding: 0.5rem 1rem; background: var(--accent-green); color: var(--bg-dark); text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
+        + Nowy wpis
+    </a>
+</div>
+
+{% if entries %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Kategoria</th>
+            <th>Nazwa systemowa</th>
+            <th>Nazwa wyświetlana</th>
+            <th>Typ</th>
+            <th>Wartości</th>
+            <th>Kolejność</th>
+            <th>Status</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td class="mono">#{{ entry.id }}</td>
+            <td>
+                <span style="display: inline-block; padding: 0.15rem 0.4rem; border: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-green);">
+                    {{ entry.category }}
+                </span>
+            </td>
+            <td class="mono" style="font-size: 11px;">{{ entry.system_name }}</td>
+            <td>{{ entry.display_name }}</td>
+            <td class="mono" style="font-size: 10px; color: var(--text-secondary);">{{ entry.value_type }}</td>
+            <td style="max-width: 320px; font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ entry.value or '—' }}
+            </td>
+            <td class="mono">{{ entry.order }}</td>
+            <td>
+                {% if entry.is_active %}
+                <span class="status success">aktywny</span>
+                {% else %}
+                <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
+                {% endif %}
+            </td>
+            <td style="white-space: nowrap;">
+                <a href="/dictionaries/{{ entry.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.75rem;">Edytuj</a>
+                <form method="POST" action="/dictionaries/{{ entry.id }}/delete" style="display: inline;" onsubmit="return confirm('Usunąć wpis {{ entry.display_name }}?');">
+                    <button type="submit" style="background: none; border: none; color: var(--accent-red); font-size: 11px; cursor: pointer; font-family: inherit; padding: 0;">Usuń</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 3rem; text-align: center; color: var(--text-secondary);">
+    Brak wpisów. <a href="/dictionaries/new" class="link">Dodaj pierwszy →</a>
+</div>
+{% endif %}
+{% endblock %}

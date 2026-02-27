@@ -200,15 +200,15 @@
     </a>
 
     <a href="/alerts?status=awaiting" class="stat-card">
-        <div class="stat-label">Backlog</div>
+        <div class="stat-label">Awaiting Fix</div>
         <div class="stat-value" style="color: var(--accent-yellow);">{{ backlog_alerts }}</div>
         <div class="stat-sub">czeka na fix</div>
     </a>
 
     <a href="/alerts?status=active&period=today" class="stat-card">
-        <div class="stat-label">Niewe dziś</div>
+        <div class="stat-label">Alerty 24h</div>
         <div class="stat-value" style="color: var(--accent-yellow);">{{ new_today }}</div>
-        <div class="stat-sub">ostatnie 24h</div>
+        <div class="stat-sub">wykrytych</div>
     </a>
 
     <a href="/suite-runs" class="stat-card">
@@ -238,7 +238,7 @@
                 {% if trend_pct == 0 %}bez zmian{% else %}{{ trend_pct }}%{% endif %}
             </div>
             <div class="trend-label">
-                trend alertów · ten tydzień: {{ alerts_this_week }}
+                trend alertów ten tydzień: {{ alerts_this_week }}
             </div>
         </div>
     </div>
@@ -250,7 +250,7 @@
 
     {# Top błędów #}
     <div>
-        <div class="section-title">🔥 Najczęstsze błędy</div>
+        <div class="section-title">Najczęstsze błędy</div>
         {% if top_alerts %}
         <table class="top-errors-table" style="background: var(--bg-panel); border: 1px solid var(--border);">
             <thead>
@@ -289,7 +289,7 @@
             </tbody>
         </table>
         {% else %}
-        <div class="no-data">Brak aktywnych błędów 🎉</div>
+        <div class="no-data">Brak aktywnych błędów</div>
         {% endif %}
     </div>
 
@@ -298,12 +298,12 @@
         <div class="section-title">
             Ostatnie runy
             <span style="font-size: 9px; color: var(--text-secondary); margin-left: 1rem; text-transform: none; letter-spacing: 0;">
-                auto-odświeżanie co 15s
+                auto-odświeżanie co 60s
             </span>
         </div>
         <div id="runs-table-container"
              hx-get="/dashboard/runs-table"
-             hx-trigger="load, every 15s"
+             hx-trigger="load, every 60s"
              hx-swap="innerHTML">
             {% include 'dashboard_runs_table.html' %}
         </div>

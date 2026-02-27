@@ -3,78 +3,163 @@
 {% block title %}{{ scenario.name }} — Shop Monitor{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 2rem;">
+<div style="margin-bottom: 1.5rem;">
     <a href="/scenarios" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Scenariusze</a>
 </div>
 
-<div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 2rem;">
-    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-        <h1 style="font-size: 15px;">{{ scenario.name }}</h1>
-        <div style="display: flex; gap: 0.5rem;">
-            <a href="/scenarios/{{ scenario.id }}/edit" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 11px; text-transform: uppercase;">
-                Edit
-            </a>
-            <form method="POST" action="/scenarios/{{ scenario.id }}/delete" style="display: inline;" onsubmit="return confirm('Na pewno?');">
-                <button type="submit" style="padding: 0.5rem 1rem; background: var(--accent-red); border: none; color: var(--bg-dark); font-size: 11px; text-transform: uppercase; cursor: pointer;">
-                    Delete
-                </button>
-            </form>
-        </div>
+{# ── Header ───────────────────────────────────────────────────────────────── #}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+    <div>
+        <h2 style="font-size: 15px; font-weight: 700; margin-bottom: 0.3rem;">{{ scenario.name }}</h2>
+        {% if scenario.description %}
+        <p style="font-size: 11px; color: var(--text-secondary);">{{ scenario.description }}</p>
+        {% endif %}
     </div>
-    
-    {% if scenario.description %}
-    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">{{ scenario.description }}</p>
-    {% endif %}
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 12px;">
-        <div>
-            <div class="stat-label">ID scenariusza</div>
-            <div class="mono">#{{ scenario.id }}</div>
-        </div>
-        <div>
-            <div class="stat-label">Status</div>
-            {% if scenario.is_active %}
-            <span class="status success">aktywny</span>
-            {% else %}
-            <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
-            {% endif %}
-        </div>
-        <div>
-            <div class="stat-label">Dostawa</div>
-            <div>{{ scenario.delivery_name or '—' }}</div>
-        </div>
-        <div>
-            <div class="stat-label">Płatność</div>
-            <div>{{ scenario.payment_name or '—' }}</div>
-        </div>
-        <div>
-            <div class="stat-label">Kod pocztowy</div>
-            <div class="mono">{{ scenario.postal_code or '—' }}</div>
-        </div>
-        <div>
-            <div class="stat-label">Składa zamówienie</div>
-            <div>{{ 'Tak' if scenario.should_order else 'Nie' }}</div>
-        </div>
+    <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+        <form method="POST" action="/scenarios/{{ scenario.id }}/copy" style="display: inline;">
+            <button type="submit"
+                    style="padding: 0.4rem 0.9rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--accent-green); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; font-family: inherit;">
+                Kopiuj
+            </button>
+        </form>
+        <a href="/scenarios/{{ scenario.id }}/edit"
+           style="padding: 0.4rem 0.9rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
+            Edytuj
+        </a>
+        <form method="POST" action="/scenarios/{{ scenario.id }}/delete" style="display: inline;"
+              onsubmit="return confirm('Na pewno usunąć scenariusz?');">
+            <button type="submit"
+                    style="padding: 0.4rem 0.9rem; background: none; border: 1px solid var(--accent-red); color: var(--accent-red); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; font-family: inherit;">
+                Usuń
+            </button>
+        </form>
     </div>
-    
-    {% if scenario.listing_urls %}
-    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-        <div class="stat-label" style="margin-bottom: 0.5rem;">URLe listingu</div>
-        {% for url in scenario.listing_urls %}
-        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 0.25rem; font-family: monospace;">
-            {{ url }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
 </div>
 
-{% if suite_links %}
-<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
-    Suity ({{ suite_links | length }})
-</h2>
+{# ── Dwie kolumny: pola + flagi ───────────────────────────────────────────── #}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
 
-<table style="margin-bottom: 2rem;">
+    {# Lewa — dane scenariusza #}
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+
+        <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.25rem;">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
+                Podstawowe
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 12px;">
+                <div>
+                    <div class="stat-label">ID</div>
+                    <div class="mono">#{{ scenario.id }}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Status</div>
+                    {% if scenario.is_active %}
+                    <span class="status success">aktywny</span>
+                    {% else %}
+                    <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">nieaktywny</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="stat-label">Kod pocztowy</div>
+                    <div class="mono">{{ scenario.postal_code or '—' }}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Złóż zamówienie</div>
+                    <div>{% if scenario.is_order %}<span style="color: var(--accent-green);">Tak</span>{% else %}Nie{% endif %}</div>
+                </div>
+            </div>
+            {% if scenario.listing_urls %}
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <div class="stat-label" style="margin-bottom: 0.4rem;">URLe listingu</div>
+                {% for url in scenario.listing_urls %}
+                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 0.2rem; word-break: break-all;">{{ url }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.25rem;">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
+                Koszyk
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 12px;">
+                <div>
+                    <div class="stat-label">Dostawa</div>
+                    <div>{{ scenario.delivery_name or '—' }}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Godzina graniczna</div>
+                    <div class="mono">{{ scenario.delivery_cutoff or '—' }}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Płatność</div>
+                    <div>{{ scenario.payment_name or '—' }}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Typ koszyka</div>
+                    <div>{{ scenario.basket_type or '—' }}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Gwarancja</div>
+                    <div>{% if scenario.guarantee %}<span style="color: var(--accent-green);">Tak</span>{% else %}Nie{% endif %}</div>
+                </div>
+            </div>
+            {% set svcs = scenario.get_services() %}
+            {% if svcs %}
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <div class="stat-label" style="margin-bottom: 0.4rem;">Usługi dodatkowe</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                    {% for s in svcs %}
+                    <span style="padding: 0.15rem 0.5rem; border: 1px solid var(--border); font-size: 11px; color: var(--text-secondary);">{{ s }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    {# Prawa — flagi #}
+    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.25rem;">
+        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-green); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
+            Flagi zachowania testu
+        </div>
+        {% if scenario.flags %}
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for sf in scenario.flags %}
+                {% if sf.is_enabled %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: var(--bg-dark); border: 1px solid var(--border);">
+                    <div>
+                        <div style="font-size: 12px;">{{ sf.flag.display_name }}</div>
+                        {% if sf.flag.description %}
+                        <div style="font-size: 10px; color: var(--text-secondary); margin-top: 1px;">{{ sf.flag.description }}</div>
+                        {% endif %}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span class="mono" style="font-size: 10px;">{{ sf.flag.name }}</span>
+                        {% if sf.is_enabled %}
+                        <span class="status success" style="font-size: 9px;">ON</span>
+                        {% else %}
+                        <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary); font-size: 9px;">OFF</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="color: var(--text-secondary); font-size: 12px;">Brak przypisanych flag.</div>
+        {% endif %}
+    </div>
+
+</div>
+
+{# ── Suity ────────────────────────────────────────────────────────────────── #}
+{% if suite_links %}
+<h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-secondary); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
+    Suity ({{ suite_links | length }})
+</h3>
+<table style="margin-bottom: 1.5rem;">
     <thead>
         <tr>
             <th>Suite</th>
@@ -85,7 +170,7 @@
     <tbody>
         {% for link in suite_links %}
         <tr>
-            <td>{{ link.suite.name }}</td>
+            <td><a href="/suites/{{ link.suite_id }}" class="link">{{ link.suite.name }}</a></td>
             <td class="mono">{{ link.order }}</td>
             <td>
                 {% if link.is_active %}
@@ -100,15 +185,16 @@
 </table>
 {% endif %}
 
-<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
+{# ── Ostatnie runy ────────────────────────────────────────────────────────── #}
+<h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-secondary); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
     Ostatnie runy ({{ recent_runs | length }})
-</h2>
+</h3>
 
 {% if recent_runs %}
 <table>
     <thead>
         <tr>
-            <th>ID runu</th>
+            <th>ID</th>
             <th>Run suite</th>
             <th>Produkt</th>
             <th>Status</th>
@@ -120,15 +206,9 @@
         {% for run in recent_runs %}
         <tr>
             <td class="mono">#{{ run.id }}</td>
-            <td class="mono">
-                <a href="/suite-runs/{{ run.suite_run_id }}" class="link">#{{ run.suite_run_id }}</a>
-            </td>
-            <td class="mono" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                {{ run.product_name or '—' }}
-            </td>
-            <td>
-                <span class="status {{ run.status.value }}">{{ run.status.value }}</span>
-            </td>
+            <td class="mono"><a href="/suite-runs/{{ run.suite_run_id }}" class="link">#{{ run.suite_run_id }}</a></td>
+            <td class="mono" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ run.product_name or '—' }}</td>
+            <td><span class="status {{ run.status.value }}">{{ run.status.value }}</span></td>
             <td class="mono">{{ run.started_at | local_time }}</td>
             <td class="mono">{{ run.duration_seconds | duration }}</td>
         </tr>
@@ -140,4 +220,5 @@
     Brak runów
 </div>
 {% endif %}
+
 {% endblock %}

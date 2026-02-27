@@ -206,10 +206,8 @@
             <a href="/dashboard" {% if request.url.path == '/dashboard' %}class="active"{% endif %}>Dashboard</a>
             <a href="/execute" {% if request.url.path == '/execute' %}class="active"{% endif %}>Uruchom</a>
             <a href="/suite-runs" {% if "/suite-runs" in request.url.path %}class="active"{% endif %}>Runy</a>
-            <a href="/suites" {% if "/suites" in request.url.path %}class="active"{% endif %}>Suity</a>
-            <a href="/scenarios" {% if "/scenarios" in request.url.path %}class="active"{% endif %}>Scenariusze</a>
-            <a href="/alert-configs" {% if "/alert-configs" in request.url.path %}class="active"{% endif %}>Konfiguracja alertów</a>
             <a href="/alerts" {% if "/alerts" in request.url.path %}class="active"{% endif %}>Alerty</a>
+            <a href="/config" {% if "/config" in request.url.path %}class="active"{% endif %}>Konfiguracja</a>
         </nav>
     </header>
     

@@ -5,10 +5,10 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
     <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
-        Scenarios
+        Scenariusze
     </h2>
     <a href="/scenarios/new" style="padding: 0.5rem 1rem; background: var(--accent-green); color: var(--bg-dark); text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
-        + Dodaj scenariusz
+        + Dodaj
     </a>
 </div>
 
@@ -45,7 +45,6 @@
             </td>
             <td>
                 <a href="/scenarios/{{ scenario.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.5rem;">Edytuj</a>
-                <a href="/scenarios/{{ scenario.id }}" style="color: var(--accent-green); text-decoration: none; font-size: 11px;">Podgląd</a>
             </td>
         </tr>
         {% endfor %}

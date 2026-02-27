@@ -13,3 +13,5 @@ from app.models.alert import Alert
 from app.models.alert_type import AlertType
 from app.models.alert_config import AlertConfig
 from app.models.alert_group import AlertGroup
+from app.models.dictionary import Dictionary
+from app.models.flag_definition import FlagDefinition, ScenarioFlag

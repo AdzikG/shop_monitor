@@ -4,13 +4,13 @@
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
     <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">Suites</h2>
-    <a href="/suites/new" class="btn-primary">+ Niewa Suite</a>
+    <a href="/suites/new" class="btn-primary">+ Dodaj</a>
 </div>
 
 <table>
     <thead>
         <tr>
-            <th>#</th>
+            <th>ID</th>
             <th>Nazwa</th>
             <th>Aktywne scenariusze</th>
             <th>Wszystkie scenariusze</th>
@@ -22,7 +22,7 @@
     <tbody>
         {% for suite in suites %}
         <tr>
-            <td class="mono">{{ suite.id }}</td>
+            <td class="mono">#{{ suite.id }}</td>
             <td>
                 <a href="/suites/{{ suite.id }}" class="link">{{ suite.name }}</a>
                 {% if suite.description %}
@@ -34,17 +34,13 @@
             <td class="mono">{{ suite.workers }}</td>
             <td>
                 {% if suite.is_active %}
-                    <span class="badge-green">AKTYWNY</span>
+                    <span class="status success">AKTYWNY</span>
                 {% else %}
-                    <span class="badge-gray">NIEAKTYWNY</span>
+                    <span class="status" style="border-color: var(--text-secondary); color: var(--text-secondary);">NIEAKTYWNY</span>
                 {% endif %}
             </td>
             <td>
-                <a href="/suites/{{ suite.id }}/edit" class="btn-sm">Edytuj</a>
-                <form method="post" action="/suites/{{ suite.id }}/delete" style="display:inline"
-                      onsubmit="return confirm('Dezaktywować suite {{ suite.name }}?')">
-                    <button type="submit" class="btn-sm btn-danger">Usuń</button>
-                </form>
+                <a href="/suites/{{ suite.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.5rem;">Edytuj</a>
             </td>
         </tr>
         {% else %}

@@ -59,7 +59,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     else:
         trend_pct = 0
 
-    trend_up = trend_pct >= 0
+    trend_up = trend_pct > 0
 
     # ── Top błędów ────────────────────────────────────────────────────────────
     from app.models.environment import Environment

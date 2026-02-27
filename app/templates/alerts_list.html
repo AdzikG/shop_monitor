@@ -170,13 +170,14 @@
     }
 
     .action-btn {
-        background: none;
-        border: none;
+        background: var(--bg-dark);
         cursor: pointer;
         font-size: 11px;
-        text-decoration: underline;
-        padding: 0;
-        margin-right: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 0.4rem 0.9rem;
+        border: 1px solid var(--border);
+        font-family: inherit;
     }
 
     .backlog-section {
@@ -209,7 +210,7 @@
 {# ── Modal: sesja analityka ───────────────────────────────────────────────── #}
 <div id="analyst-modal" class="modal-overlay">
     <div class="modal">
-        <h3>Identyfikacja analityka</h3>
+        <h3>Identyfikacja weryfikatora alertów</h3>
         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem;">
             Podaj imię i nazwisko — zostanie zapamiętane w tej przeglądarce.
         </p>
@@ -269,15 +270,17 @@
 </div>
 
 {# ── Nagłówek ─────────────────────────────────────────────────────────────── #}
-<h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">
-    Alerts
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; height: 32px;">
+    <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">
+    Alerty
     <span id="analyst-label" style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 1rem;"></span>
-</h2>
+    </h2>
+</div>
 
 {# ── Statystyki ───────────────────────────────────────────────────────────── #}
 <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 12px;">
     <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1rem; flex: 1;">
-        <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 10px; margin-bottom: 0.5rem;">Active</div>
+        <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 10px; margin-bottom: 0.5rem;">Aktywne</div>
         <div style="font-size: 24px; color: var(--accent-red);">{{ total_open }}</div>
     </div>
     <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1rem; flex: 1;">
@@ -285,7 +288,7 @@
         <div style="font-size: 24px; color: #fd79a8;">{{ total_awaiting }}</div>
     </div>
     <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1rem; flex: 1;">
-        <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 10px; margin-bottom: 0.5rem;">Closed</div>
+        <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 10px; margin-bottom: 0.5rem;">Zamknięte</div>
         <div style="font-size: 24px; color: var(--accent-green);">{{ total_closed }}</div>
     </div>
 </div>
@@ -295,17 +298,17 @@
     <div class="filter-group">
         <label>Status:</label>
         <select name="status" onchange="this.form.submit()">
-            <option value="active"   {% if current_status == 'active'   %}selected{% endif %}>Active</option>
+            <option value="active"   {% if current_status == 'active'   %}selected{% endif %}>Aktywne</option>
             <option value="awaiting" {% if current_status == 'awaiting' %}selected{% endif %}>Awaiting</option>
-            <option value="closed"   {% if current_status == 'closed'   %}selected{% endif %}>Closed</option>
-            <option value="all"      {% if current_status == 'all'      %}selected{% endif %}>All</option>
+            <option value="closed"   {% if current_status == 'closed'   %}selected{% endif %}>Zamknięte</option>
+            <option value="all"      {% if current_status == 'all'      %}selected{% endif %}>Wszystkie</option>
         </select>
     </div>
 
     <div class="filter-group">
         <label>Environment:</label>
         <select name="environment_id" onchange="this.form.submit()">
-            <option value="all" {% if current_environment == 'all' %}selected{% endif %}>All</option>
+            <option value="all" {% if current_environment == 'all' %}selected{% endif %}>Wszystkie</option>
             {% for env in environments %}
             <option value="{{ env.id }}" {% if current_environment == env.id|string %}selected{% endif %}>
                 {{ env.name }}
@@ -315,11 +318,11 @@
     </div>
 
     <div class="filter-group">
-        <label>Search:</label>
-        <input type="text" name="search" value="{{ search_query }}" placeholder="Title or rule...">
+        <label>Wyszukaj:</label>
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Tytuł lub rola...">
     </div>
 
-    <button type="submit" class="btn-primary">Filter</button>
+    <button type="submit" class="btn-primary">Filtruj</button>
 </form>
 
 {# ── Tabela alertów ───────────────────────────────────────────────────────── #}
@@ -438,7 +441,7 @@
                 {% if alert.status.value == 'open' %}
                     <form method="POST" action="/alerts/{{ alert.id }}/assign" style="display:inline;" onsubmit="injectAnalystName(this)">
                         <input type="hidden" name="analyst_name" value="">
-                        <button type="submit" class="action-btn" style="color: var(--accent-yellow);">Start</button>
+                        <button type="submit" class="action-btn" style="color: var(--text-secondary);">Start</button>
                     </form>
 
                 {% elif alert.status.value == 'in_progress' %}
@@ -446,7 +449,7 @@
                             onclick="openResolveModal({{ alert.id }})">Resolve</button>
 
                 {% elif alert.status.value in ['awaiting_fix', 'awaiting_test_update'] %}
-                    <button class="action-btn" style="color: var(--accent-green);"
+                    <button class="action-btn" style="color: var(--text-secondary);"
                             onclick="openResolveModal({{ alert.id }})">Update</button>
                 {% endif %}
             </td>
@@ -457,7 +460,7 @@
 
 {% if not alert_groups %}
 <div style="padding: 3rem; text-align: center; color: var(--text-secondary);">
-    Nie alerts found
+    Brak aktywnych alertów
 </div>
 {% endif %}
 
@@ -566,7 +569,10 @@ function closeModal(id) {
 function toggleDuplicateField() {
     const type = document.getElementById('resolve-type').value;
     const field = document.getElementById('duplicate-field');
+    const form = document.getElementById('resolve-form');
+    const dupInput = form.querySelector('input[name="duplicate_of_id"]');
     field.style.display = (type === 'duplicate') ? 'block' : 'none';
+    dupInput.required = (type === 'duplicate');
 }
 
 // Zamknij modal klikając poza nim

@@ -54,7 +54,7 @@ class CartListPage(BasePage):
 
             # Uzupełnij URL jeśli jest relatywny
             if product_url.startswith("/"):
-                product_url = f"https://www.amazon.pl{product_url}"
+                product_url = f"{product_url}"
 
             logger.info(f"Wylosowany produkt [{index}]: {product_name[:50]}...")
             return {

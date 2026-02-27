@@ -69,9 +69,9 @@
 {% endblock %}
 
 {% block content %}
-<h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;">
-    Runy suite
-</h2>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; height: 32px;">
+    <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">Runs</h2>
+</div>
 
 <table>
     <thead>
@@ -96,10 +96,10 @@
             <td class="mono">{{ run.environment.name }}</td>
             <td>
                 <span class="status {{ run.status.value }}">
-                    {% if run.status.value == 'success' %}sukces
-                    {% elif run.status.value == 'failed' %}błąd
-                    {% elif run.status.value == 'partial' %}częściowy
-                    {% elif run.status.value == 'running' %}w toku
+                    {% if run.status.value == 'success' %}success
+                    {% elif run.status.value == 'failed' %}bug
+                    {% elif run.status.value == 'partial' %}partial
+                    {% elif run.status.value == 'running' %}running
                     {% else %}{{ run.status.value }}{% endif %}
                 </span>
             </td>
