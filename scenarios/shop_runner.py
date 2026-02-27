@@ -16,13 +16,13 @@ from scenarios.run_data import RunData
 from scenarios.rules_result import AlertResult, RulesResult
 
 # Pages
-from scenarios.pages.pages import (
+from scenarios.pages import (
     HomePage, ListingPage,
     Cart0Page, Cart1Page, Cart2Page, Cart3Page, Cart4Page,
 )
 
 # Rules
-from scenarios.rules.rules import (
+from scenarios.rules import (
     HomeRules, ListingRules,
     Cart0Rules, Cart1Rules, Cart2Rules, Cart3Rules, Cart4Rules,
     GlobalRules,

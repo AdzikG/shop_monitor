@@ -66,12 +66,11 @@ class SuiteExecutor:
                 try:
                     executor = ScenarioExecutor(
                         scenario_db=scenario,
+                        environment_db=self.environment,
                         suite_run_id=suite_run.id,
                         suite_id=self.suite.id,
-                        environment_id=self.environment.id,
-                        base_url=self.environment.base_url,
                         db=db_session,
-                        headless=self.headless
+                        headless=self.headless,
                     )
                     run = await executor.run()
 

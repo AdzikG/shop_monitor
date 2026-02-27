@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
+from app.models.scenario import Scenario
+from app.models.environment import Environment
 import json
 
 
@@ -37,7 +39,7 @@ class ScenarioContext:
         return not self.flag('mobile')
 
     @classmethod
-    def from_db(cls, scenario, environment) -> "ScenarioContext":
+    def from_db(cls, scenario: Scenario, environment: Environment) -> "ScenarioContext":
         services = []
         if scenario.services:
             try:
@@ -50,7 +52,7 @@ class ScenarioContext:
         return cls(
             scenario_id=scenario.id,
             scenario_name=scenario.name,
-            environment_url=environment.url,
+            environment_url=environment.base_url,
             environment_name=environment.name,
             listing_urls=scenario.listing_urls or [],
             delivery_name=scenario.delivery_name,

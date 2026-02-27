@@ -1,18 +1,20 @@
 """
 Scenario Executor — uruchamia pojedynczy scenariusz testowy.
+Używa ScenarioContext + ShopRunner zamiast bezpośrednich wywołań Playwright.
 """
 
-import asyncio
 import logging
 from datetime import datetime, timezone
-from playwright.async_api import async_playwright, Page
 
+from playwright.async_api import async_playwright
 from sqlalchemy.orm import Session
 
 from app.models.run import ScenarioRun, RunStatus
 from app.models.scenario import Scenario
+from app.models.environment import Environment
 from core.alert_engine import AlertEngine
-from pages.cart.cart_0_list import CartListPage
+from scenarios.context import ScenarioContext
+from scenarios.shop_runner import ShopRunner
 
 logger = logging.getLogger(__name__)
 
@@ -23,32 +25,33 @@ class ScenarioExecutor:
     def __init__(
         self,
         scenario_db: Scenario,
+        environment_db: Environment,
         suite_run_id: int,
         suite_id: int,
-        environment_id: int,
-        base_url: str,
         db: Session,
-        headless: bool = True
+        headless: bool = True,
     ):
         self.scenario_db = scenario_db
+        self.environment_db = environment_db
         self.suite_run_id = suite_run_id
         self.suite_id = suite_id
-        self.environment_id = environment_id
-        self.base_url = base_url
         self.db = db
         self.headless = headless
-        self.scenario_run = None  # ZMIENIONE z self.run
+        self.scenario_run = None
         self.alert_engine = None
 
     async def run(self) -> ScenarioRun:
         """Uruchamia scenariusz i zwraca ScenarioRun z wynikami."""
-        
-        # Utworz scenario_run w bazie
+
+        # Buduj context z danych DB
+        context = ScenarioContext.from_db(self.scenario_db, self.environment_db)
+
+        # Utwórz scenario_run w bazie
         self.scenario_run = ScenarioRun(
             suite_id=self.suite_id,
-            environment_id=self.environment_id,
             suite_run_id=self.suite_run_id,
             scenario_id=self.scenario_db.id,
+            environment_id=self.environment_db.id,
             status=RunStatus.RUNNING,
             started_at=datetime.now(timezone.utc),
         )
@@ -60,118 +63,73 @@ class ScenarioExecutor:
         self.alert_engine = AlertEngine(
             run_id=self.scenario_run.id,
             scenario_id=self.scenario_db.id,
-            environment_id=self.environment_id,
-            db=self.db
+            environment_id=self.environment_db.id,
+            db=self.db,
         )
 
         logger.info(f"[RUN #{self.scenario_run.id}] Start: {self.scenario_db.name}")
 
         try:
-            await self._execute_scenario()
-            
-            # Sprawdz czy byly alerty
+            await self._execute(context)
+
             if self.alert_engine.counted_alerts() > 0:
                 self.scenario_run.status = RunStatus.FAILED
             else:
                 self.scenario_run.status = RunStatus.SUCCESS
-            
+
         except Exception as e:
-            logger.error(f"[RUN #{self.scenario_run.id}] Nieoczekiwany blad: {e}", exc_info=True)
+            logger.error(f"[RUN #{self.scenario_run.id}] Nieoczekiwany błąd: {e}", exc_info=True)
             self.scenario_run.status = RunStatus.FAILED
-            self.alert_engine.add_alert(
-                "scenario.unexpected_error",
-                description=str(e)
-            )
-        
+            self.alert_engine.add_alert("scenario.unexpected_error", description=str(e))
+
         finally:
-            # Zapisz alerty
             self.alert_engine.save_all()
-            
-            # Finalizuj run
             self.scenario_run.finished_at = datetime.now(timezone.utc)
             self.db.commit()
-            
+
             logger.info(
                 f"[RUN #{self.scenario_run.id}] Finished: {self.scenario_run.status.value} | "
                 f"Duration: {self.scenario_run.duration_seconds}s | "
                 f"Alerts: {self.alert_engine.counted_alerts()}"
             )
 
-        return self.scenario_run  # WAŻNE: zwróć scenario_run
+        return self.scenario_run
 
-    async def _execute_scenario(self):
-        """Glowna logika scenariusza - uruchamia Playwright i przechodzi przez kroki."""
-        
+    async def _execute(self, context: ScenarioContext):
+        """Uruchamia Playwright i przekazuje sterowanie do ShopRunner."""
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=self.headless)
-            context = await browser.new_context()
-            page = await context.new_page()
+            browser_context = await browser.new_context(
+                # Mobile viewport jeśli flaga ustawiona
+                viewport={'width': 390, 'height': 844} if context.is_mobile else {'width': 1280, 'height': 720},
+            )
+            page = await browser_context.new_page()
 
             try:
-                # Krok 1: Listing i wybor produktu
-                await self._step_listing(page)
-                
-                # Krok 2: Dodanie do koszyka
-                # await self._step_add_to_cart(page)
-                
-                # Krok 3: Transport
-                # await self._step_transport(page)
-                
-                # etc...
-                
+                runner = ShopRunner(page=page, context=context)
+                result = await runner.run()
+
+                # Przekaż alerty z ShopRunner do AlertEngine
+                for alert in result.alerts:
+                    self.alert_engine.add_alert(
+                        business_rule=alert.business_rule,
+                        description=alert.description,
+                        alert_type=alert.alert_type,
+                    )
+
+                # Zapisz gdzie test się zatrzymał
+                if result.stopped_at:
+                    logger.info(
+                        f"[RUN #{self.scenario_run.id}] "
+                        f"Zatrzymano na: {result.stopped_at} | "
+                        f"Sukces: {result.success}"
+                    )
+
+                # Test zatrzymał się nieoczekiwanie = błąd
+                if result.stopped_at and not result.success:
+                    self.scenario_run.status = RunStatus.FAILED
+
             finally:
-                await context.close()
+                await browser_context.close()
                 await browser.close()
-
-    async def _step_listing(self, page: Page):
-        """Krok 1: Wejscie na listing i wybor produktu."""
-        
-        cart_page = CartListPage(page)
-        
-        # Losuj URL z listy
-        import random
-        listing_url = random.choice(self.scenario_db.listing_urls)
-        full_url = f"{self.base_url}{listing_url}"
-        
-        logger.info(f"[RUN #{self.scenario_run.id}] Listing: {full_url}")
-        
-        # Przejdz na listing
-        await cart_page.go_to_listing(full_url)
-        
-        # Wybierz losowy produkt
-        product = await cart_page.pick_random_product()
-        
-        if not product:
-            # Brak produktow - alert
-            self.alert_engine.add_alert("listing.no_products")
-            return
-        
-        logger.info(f"[RUN #{self.scenario_run.id}] Wybrany produkt: {product.get('name', 'N/A')}")
-        
-        # Zapisz dane produktu w run
-        self.scenario_run.product_id = product.get('id')
-        self.scenario_run.product_name = product.get('name')
-        self.db.flush()
-        
-        # Przejdz do produktu
-        if product.get('url'):
-            await page.goto(product['url'])
-            await cart_page.wait_for_load()
-
-    async def _step_add_to_cart(self, page: Page):
-        """Krok 2: Dodanie produktu do koszyka."""
-        
-        cart_page = CartListPage(page)
-        
-        # Kliknij "Dodaj do koszyka"
-        success = await cart_page.add_to_cart()
-        
-        if not success:
-            # Przycisk niewidoczny
-            self.alert_engine.add_alert("cart.add_to_cart_failed")
-            return
-        
-        logger.info(f"[RUN #{self.scenario_run.id}] Dodano do koszyka")
-        
-        # Czekaj na potwierdzenie
-        await asyncio.sleep(2)
