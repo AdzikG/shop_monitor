@@ -59,6 +59,7 @@ class ShopRunner:
         self.alerts: list[AlertResult] = []
         # Instrukcje akumulowane między etapami
         self.instructions: dict = {}
+        self._current_stage = 'init'
 
     # ── Publiczne API ─────────────────────────────────────────────────────────
 
@@ -101,7 +102,7 @@ class ShopRunner:
             return ShopRunResult(
                 run_data=self.run_data,
                 alerts=self.alerts,
-                stopped_at='error',
+                stopped_at=self._current_stage,
                 success=False,
             )
 
@@ -114,10 +115,12 @@ class ShopRunner:
     # ── Etapy ─────────────────────────────────────────────────────────────────
 
     async def _run_home(self):
+        self._current_stage = 'HomeScreen'
         self.run_data.home = await self._get_page(HomePage).execute(self.instructions)
         self._process_result(HomeRules(self.context).check(self.run_data), 'home')
 
     async def _run_listing(self):
+        self._current_stage = 'Listing'
         self.run_data.listing = await self._get_page(ListingPage).execute(self.instructions)
         self._process_result(ListingRules(self.context).check(self.run_data), 'listing')
 

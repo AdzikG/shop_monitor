@@ -12,6 +12,11 @@ class ListingPage(BasePage):
 
     async def execute(self, instructions: dict) -> ProductData:
         url = random.choice(self.context.listing_urls)
+
+        # Jeśli URL jest relatywny — złącz z base URL środowiska
+        if not url.startswith('http'):
+            url = self.context.environment_url.rstrip('/') + url
+
         self.log(f"Nawiguję do: {url}")
         await self.page.goto(url)
         await self.wait_for_navigation()

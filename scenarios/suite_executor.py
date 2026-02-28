@@ -53,7 +53,7 @@ class SuiteExecutor:
         self.suite_run_id = suite_run.id
         self._setup_logging()
 
-        logger.info(f"\n{'='*60}")
+        logger.info(f"{'='*60}")
         logger.info(f"[SUITE RUN #{suite_run.id}] {self.suite.name} @ {self.environment.name}")
         logger.info(f"Scenariusze: {len(self.scenarios)} | Workers: {self.workers}")
         logger.info(f"{'='*60}\n")
@@ -150,7 +150,9 @@ class SuiteExecutor:
         self.log_handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s | %(levelname)-8s | %(message)s', datefmt='%H:%M:%S')
         self.log_handler.setFormatter(formatter)
-        logging.getLogger().addHandler(self.log_handler)
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
+        root.addHandler(self.log_handler)
 
     # ── Główna logika finalizacji ─────────────────────────────────────────────
 
@@ -210,7 +212,7 @@ class SuiteExecutor:
 
         self.db.commit()
 
-        logger.info(f"\n{'='*60}")
+        logger.info(f"{'='*60}")
         logger.info(f"[SUITE RUN #{suite_run.id}] COMPLETED")
         logger.info(f"Status: {suite_run.status.value.upper()}")
         logger.info(f"Success: {success} | Failed: {failed}")

@@ -13,13 +13,11 @@ class BaseRules:
     def alert(
         self,
         business_rule: str,
-        title: str,
         description: str = "",
         alert_type: str = "bug",
     ) -> AlertResult:
         return AlertResult(
             business_rule=business_rule,
-            title=title,
             description=description,
             alert_type=alert_type,
         )

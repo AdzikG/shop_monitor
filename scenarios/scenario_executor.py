@@ -43,10 +43,8 @@ class ScenarioExecutor:
     async def run(self) -> ScenarioRun:
         """Uruchamia scenariusz i zwraca ScenarioRun z wynikami."""
 
-        # Buduj context z danych DB
         context = ScenarioContext.from_db(self.scenario_db, self.environment_db)
 
-        # Utwórz scenario_run w bazie
         self.scenario_run = ScenarioRun(
             suite_id=self.suite_id,
             suite_run_id=self.suite_run_id,
@@ -59,7 +57,6 @@ class ScenarioExecutor:
         self.db.commit()
         self.db.refresh(self.scenario_run)
 
-        # Inicjalizuj AlertEngine
         self.alert_engine = AlertEngine(
             run_id=self.scenario_run.id,
             scenario_id=self.scenario_db.id,
@@ -101,7 +98,6 @@ class ScenarioExecutor:
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=self.headless)
             browser_context = await browser.new_context(
-                # Mobile viewport jeśli flaga ustawiona
                 viewport={'width': 390, 'height': 844} if context.is_mobile else {'width': 1280, 'height': 720},
             )
             page = await browser_context.new_page()
@@ -110,7 +106,6 @@ class ScenarioExecutor:
                 runner = ShopRunner(page=page, context=context)
                 result = await runner.run()
 
-                # Przekaż alerty z ShopRunner do AlertEngine
                 for alert in result.alerts:
                     self.alert_engine.add_alert(
                         business_rule=alert.business_rule,
@@ -118,7 +113,6 @@ class ScenarioExecutor:
                         alert_type=alert.alert_type,
                     )
 
-                # Zapisz gdzie test się zatrzymał
                 if result.stopped_at:
                     logger.info(
                         f"[RUN #{self.scenario_run.id}] "
@@ -126,9 +120,11 @@ class ScenarioExecutor:
                         f"Sukces: {result.success}"
                     )
 
-                # Test zatrzymał się nieoczekiwanie = błąd
-                if result.stopped_at and not result.success:
-                    self.scenario_run.status = RunStatus.FAILED
+                # Nieoczekiwany stop = rzuć wyjątek żeby run dostał status FAILED
+                if not result.success:
+                    raise Exception(
+                        f"Test zatrzymany nieoczekiwanie na '{result.stopped_at}'"
+                    )
 
             finally:
                 await browser_context.close()
