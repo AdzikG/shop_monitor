@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from database import get_db
 from app.models.suite_run import SuiteRun, SuiteRunStatus
 from app.models.alert_group import AlertGroup, AlertStatus
-from app.models.run import ScenarioRun
+from app.models.run import ScenarioRun, RunStatus
 from app.templates import templates
 
 router = APIRouter(tags=["dashboard"])
@@ -34,7 +34,8 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
 
     # ── Liczniki runów 24h ────────────────────────────────────────────────────
     scenarios_24h = db.query(ScenarioRun).filter(
-        ScenarioRun.started_at >= today
+        ScenarioRun.started_at >= today,
+        ScenarioRun.status != RunStatus.CANCELLED
     ).count()
 
     failed_24h = db.query(ScenarioRun).filter(

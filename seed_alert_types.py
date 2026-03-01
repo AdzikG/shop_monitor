@@ -5,6 +5,7 @@ Uruchom po migracji: python seed_alert_types.py
 
 from database import SessionLocal
 from app.models.alert_type import AlertType
+from app.models.scheduled_job import ScheduledJob
 
 
 def seed_alert_types():

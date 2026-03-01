@@ -10,6 +10,7 @@ class SuiteRunStatus(str, enum.Enum):
     SUCCESS = "success"  # wszystkie scenariusze ok
     FAILED = "failed"    # przynajmniej jeden scenariusz failed
     PARTIAL = "partial"  # niektore scenariusze skipped/failed
+    CANCELLED = "cancelled"
 
 
 class SuiteRun(Base):
@@ -30,6 +31,7 @@ class SuiteRun(Base):
     )
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    triggered_by: Mapped[str] = mapped_column(String(50), default="manual")
     
     # Statystyki
     total_scenarios: Mapped[int] = mapped_column(Integer, default=0)

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class SuiteExecutor:
     """Orchestrator suite — tworzy suite_run, uruchamia scenariusze, agreguje alerty."""
 
-    def __init__(self, suite, environment, scenarios, workers: int, headless: bool, db: Session):
+    def __init__(self, suite, environment, scenarios, workers: int, headless: bool, db: Session, suite_run=None):
         self.suite = suite
         self.environment = environment
         self.scenarios = scenarios
@@ -35,20 +35,24 @@ class SuiteExecutor:
         self.suite_run_id = None
         self.log_handler = None
         self.log_file = None
+        self.suite_run = suite_run
 
     async def run(self) -> SuiteRun:
         """Uruchamia cala suite i zwraca suite_run z wynikami."""
 
-        suite_run = SuiteRun(
-            suite_id=self.suite.id,
-            environment_id=self.environment.id,
-            status=SuiteRunStatus.RUNNING,
-            started_at=datetime.now(timezone.utc),
-            total_scenarios=len(self.scenarios),
-        )
-        self.db.add(suite_run)
-        self.db.commit()
-        self.db.refresh(suite_run)
+        if self.suite_run:
+            suite_run = self.suite_run  # użyj przekazanego
+        else:
+            suite_run = SuiteRun(
+                suite_id=self.suite.id,
+                environment_id=self.environment.id,
+                status=SuiteRunStatus.RUNNING,
+                started_at=datetime.now(timezone.utc),
+                total_scenarios=len(self.scenarios),
+            )
+            self.db.add(suite_run)
+            self.db.commit()
+            self.db.refresh(suite_run)
 
         self.suite_run_id = suite_run.id
         self._setup_logging()

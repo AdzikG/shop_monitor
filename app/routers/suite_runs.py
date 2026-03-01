@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 import json
 import html
 from pathlib import Path
+from datetime import datetime, timezone
 
 from database import get_db
-from app.models.suite_run import SuiteRun
-from app.models.run import ScenarioRun
+from app.models.suite_run import SuiteRun, SuiteRunStatus
+from app.models.run import ScenarioRun, RunStatus
 from app.templates import templates
+from core import runner_registry
 
 router = APIRouter(tags=["suite_runs"])
 
@@ -35,6 +37,9 @@ async def suite_runs_list(
         .all()
     )
 
+    # Które suite_run_id są aktualnie uruchomione
+    running_ids = set(runner_registry.get_running().keys())
+
     return templates.TemplateResponse("suite_runs_list.html", {
         "request": request,
         "runs": runs,
@@ -42,6 +47,7 @@ async def suite_runs_list(
         "total_pages": total_pages,
         "total": total,
         "page_size": PAGE_SIZE,
+        "running_ids": running_ids,
     })
 
 
@@ -74,12 +80,47 @@ async def suite_run_detail(suite_run_id: int, request: Request, db: Session = De
             'scenario_ids': scenario_ids,
         })
 
+    is_running = runner_registry.is_running(suite_run_id)
+
     return templates.TemplateResponse("suite_run_detail.html", {
         "request": request,
         "suite_run": suite_run,
         "scenario_runs": scenario_runs,
         "alert_groups": alert_groups,
+        "is_running": is_running,
     })
+
+
+@router.post("/suite-runs/{suite_run_id}/cancel")
+async def cancel_suite_run(suite_run_id: int, db: Session = Depends(get_db)):
+    """Anuluje trwający suite run."""
+
+    suite_run = db.query(SuiteRun).filter(SuiteRun.id == suite_run_id).first()
+    if not suite_run:
+        raise HTTPException(status_code=404, detail="Suite run not found")
+
+    if not runner_registry.is_running(suite_run_id):
+        raise HTTPException(status_code=400, detail="Suite run nie jest aktualnie uruchomiony")
+
+    cancelled = runner_registry.cancel(suite_run_id)
+
+    if cancelled:
+        # Status zostanie ustawiony przez _run_suite_background po CancelledError
+        # Ale na wszelki wypadek ustawiamy też tutaj
+        suite_run.status = SuiteRunStatus.CANCELLED
+        suite_run.finished_at = datetime.now(timezone.utc)
+        scenario_runs = (
+                db.query(ScenarioRun)
+                .filter(ScenarioRun.suite_run_id == suite_run_id)
+                .order_by(ScenarioRun.started_at)
+                .all()
+            )
+        for scenario in scenario_runs:
+            scenario.status = RunStatus.CANCELLED
+            scenario.finished_at = datetime.now(timezone.utc)
+        db.commit()
+
+    return JSONResponse({"ok": cancelled, "suite_run_id": suite_run_id})
 
 
 @router.get("/suite-runs/{suite_run_id}/logs", response_class=HTMLResponse)

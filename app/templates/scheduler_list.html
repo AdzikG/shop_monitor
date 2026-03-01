@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Scheduler — Shop Monitor{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cron-hint {
+        font-size: 10px;
+        color: var(--text-secondary);
+        font-family: 'Fira Code', monospace;
+        margin-top: 0.3rem;
+    }
+    .cron-examples {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.4rem;
+    }
+    .cron-example {
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        padding: 0.2rem 0.5rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 10px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .cron-example:hover {
+        border-color: var(--accent-green);
+        color: var(--text-primary);
+    }
+    .toggle-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.2rem 0.5rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .toggle-btn.active {
+        border-color: var(--accent-green);
+        color: var(--accent-green);
+    }
+    .toggle-btn.inactive {
+        border-color: var(--border);
+        color: var(--text-secondary);
+        opacity: 0.6;
+    }
+    .toggle-btn:hover {
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+        opacity: 1;
+    }
+    .action-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        padding: 0.2rem 0.5rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .action-btn:hover { border-color: var(--text-primary); color: var(--text-primary); }
+    .action-btn.danger:hover { border-color: var(--accent-red); color: var(--accent-red); }
+    .action-btn.run:hover { border-color: var(--accent-green); color: var(--accent-green); }
+    .form-section {
+        border: 1px solid var(--border);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 80px 1fr auto;
+        gap: 1rem;
+        align-items: end;
+    }
+    .form-group label {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 0.4rem;
+    }
+    .form-group select,
+    .form-group input {
+        width: 100%;
+        background: var(--bg-dark);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        padding: 0.5rem 0.75rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 12px;
+    }
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--accent-green);
+    }
+    .submit-btn {
+        background: none;
+        border: 1px solid var(--accent-green);
+        color: var(--accent-green);
+        padding: 0.5rem 1.25rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s, color 0.15s;
+    }
+    .submit-btn:hover {
+        background: var(--accent-green);
+        color: var(--bg-dark);
+    }
+    .disabled-row td {
+        opacity: 0.45;
+    }
+    .disabled-row td:last-child {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">Scheduler</h2>
+</div>
+
+{# ── Formularz dodania ──────────────────────────────────────────────────────── #}
+<div class="form-section">
+    <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); margin-bottom:1rem;">
+        Nowy job
+    </div>
+    <form method="post" action="/scheduler">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Suite</label>
+                <select name="suite_id" required>
+                    <option value="">— wybierz —</option>
+                    {% for suite in suites %}
+                    <option value="{{ suite.id }}">{{ suite.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Środowisko</label>
+                <select name="environment_id" required>
+                    <option value="">— wybierz —</option>
+                    {% for env in environments %}
+                    <option value="{{ env.id }}">{{ env.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Workers</label>
+                <input type="number" name="workers" value="2" min="1" max="10" required>
+            </div>
+            <div class="form-group">
+                <label>Cron</label>
+                <input type="text" name="cron" id="cronInput" placeholder="0 8 * * 1-5" required>
+                <div class="cron-hint">min godz dzień miesiąc dzień-tyg</div>
+                <div class="cron-examples">
+                    <span class="cron-example" onclick="setCron('0 * * * *')">co godzinę</span>
+                    <span class="cron-example" onclick="setCron('0 8 * * 1-5')">pn-pt 8:00</span>
+                    <span class="cron-example" onclick="setCron('0 8,14 * * *')">8:00 i 14:00</span>
+                    <span class="cron-example" onclick="setCron('*/30 * * * *')">co 30 min</span>
+                    <span class="cron-example" onclick="setCron('0 9 * * *')">codziennie 9:00</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="submit-btn">+ Dodaj</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{# ── Lista jobów ───────────────────────────────────────────────────────────── #}
+{% if jobs %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Suite</th>
+            <th>Środowisko</th>
+            <th>Workers</th>
+            <th>Cron</th>
+            <th>Następny run</th>
+            <th>Ostatni run</th>
+            <th>Status</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for job in jobs %}
+        <tr class="{{ 'disabled-row' if not job.is_enabled }}">
+            <td class="mono">#{{ job.id }}</td>
+            <td>{{ job.suite.name }}</td>
+            <td class="mono">{{ job.environment.name }}</td>
+            <td class="mono">{{ job.workers }}</td>
+            <td class="mono">{{ job.cron }}</td>
+            <td class="mono">
+                {% if job.next_run_at and job.is_enabled %}
+                    {{ job.next_run_at | local_time }}
+                {% else %}
+                    <span style="color: var(--text-secondary);">—</span>
+                {% endif %}
+            </td>
+            <td class="mono">
+                {% if job.last_run_at %}
+                    {% if job.last_suite_run_id %}
+                        <a href="/suite-runs/{{ job.last_suite_run_id }}" class="link">
+                            {{ job.last_run_at | local_time }}
+                        </a>
+                    {% else %}
+                        {{ job.last_run_at | local_time }}
+                    {% endif %}
+                {% else %}
+                    <span style="color: var(--text-secondary);">—</span>
+                {% endif %}
+            </td>
+            <td>
+                <form method="post" action="/scheduler/{{ job.id }}/toggle" style="display:inline;">
+                    <button type="submit"
+                            class="toggle-btn {{ 'active' if job.is_enabled else 'inactive' }}">
+                        {{ 'ON' if job.is_enabled else 'OFF' }}
+                    </button>
+                </form>
+            </td>
+            <td style="display:flex; gap:0.4rem;">
+                <form method="post" action="/scheduler/{{ job.id }}/run-now" style="display:inline;">
+                    <button type="submit" class="action-btn run" title="Uruchom teraz">▶ run</button>
+                </form>
+                <form method="post" action="/scheduler/{{ job.id }}/delete"
+                      onsubmit="return confirm('Usunąć job #{{ job.id }}?')" style="display:inline;">
+                    <button type="submit" class="action-btn danger">✕ usuń</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="padding: 3rem; text-align: center; color: var(--text-secondary); font-size: 12px; border: 1px solid var(--border);">
+    Brak zaplanowanych jobów — dodaj pierwszy powyżej.
+</div>
+{% endif %}
+
+<script>
+function setCron(value) {
+    document.getElementById('cronInput').value = value;
+}
+</script>
+{% endblock %}

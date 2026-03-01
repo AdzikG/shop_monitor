@@ -31,5 +31,5 @@ class Suite(Base):
     def __repr__(self) -> str:
         return f"<Suite {self.name} workers={self.workers}>"
 
-    # Nowa relacja
     suite_runs: Mapped[list["SuiteRun"]] = relationship(back_populates="suite")
+    scheduled_jobs: Mapped[list["ScheduledJob"]] = relationship(back_populates="suite", cascade="all, delete-orphan")

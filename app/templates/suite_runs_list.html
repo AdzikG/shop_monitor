@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Runy — Shop Monitor{% endblock %}
+{% block title %}Runy — Shop Monitor
+
+{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -77,6 +79,7 @@
     <thead>
         <tr>
             <th>ID</th>
+            <th>Wyzwalacz</th>
             <th>Suite</th>
             <th>Środowisko</th>
             <th>Status</th>
@@ -84,12 +87,14 @@
             <th>Rozpoczęto</th>
             <th>Czas</th>
             <th>Alerty</th>
+            <th>Akcje</th>
         </tr>
     </thead>
     <tbody>
         {% for run in runs %}
-        <tr>
+        <tr onclick='window.location="/suite-runs/{{ run.id }}";' style="cursor: pointer;">
             <td class="mono">#{{ run.id }}</td>
+            <td class="mono">{{ run.triggered_by }}</td>
             <td>
                 <a href="/suite-runs/{{ run.id }}" class="link">{{ run.suite.name }}</a>
             </td>
@@ -97,9 +102,10 @@
             <td>
                 <span class="status {{ run.status.value }}">
                     {% if run.status.value == 'success' %}success
-                    {% elif run.status.value == 'failed' %}bug
+                    {% elif run.status.value == 'failed' %}failed
                     {% elif run.status.value == 'partial' %}partial
                     {% elif run.status.value == 'running' %}running
+                    {% elif run.status.value == 'cancelled' %}cancelled
                     {% else %}{{ run.status.value }}{% endif %}
                 </span>
             </td>
@@ -116,6 +122,17 @@
                     <span class="alert-badge">{{ run.total_alerts }}</span>
                 {% else %}
                     <span class="mono">—</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if run.id in running_ids %}
+                <button class="action-btn danger"
+                        onclick="cancelSuiteRun({{ run.id }}, this)"
+                        title="Zatrzymaj run">
+                    ✕ kill
+                </button>
+                {% else %}
+                <span class="mono" style="color: var(--text-secondary);">—</span>
                 {% endif %}
             </td>
         </tr>
@@ -157,5 +174,29 @@
         {{ (page - 1) * page_size + 1 }}–{{ [page * page_size, total] | min }} z {{ total }}
     </span>
 </div>
+
+<script>
+async function cancelSuiteRun(suiteRunId, btn) {
+    if (!confirm('Zatrzymać suite run #' + suiteRunId + '?')) return;
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+        const res = await fetch('/suite-runs/' + suiteRunId + '/cancel', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+            btn.closest('tr').querySelector('.status').textContent = 'cancelled';
+            btn.closest('tr').querySelector('.status').className = 'status cancelled';
+            btn.closest('td').innerHTML = '<span class="mono" style="color: var(--text-secondary);">—</span>';
+        } else {
+            btn.disabled = false;
+            btn.textContent = '✕ kill';
+            alert('Nie udało się zatrzymać runu.');
+        }
+    } catch(e) {
+        btn.disabled = false;
+        btn.textContent = '✕ kill';
+    }
+}
+</script>
 
 {% endblock %}

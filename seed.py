@@ -14,6 +14,9 @@ from app.models.scenario import Scenario
 from app.models.suite_scenario import SuiteScenario
 from app.models.dictionary import Dictionary
 from app.models.flag_definition import FlagDefinition, ScenarioFlag
+from app.models.alert_type import AlertType
+from app.models.alert_config import AlertConfig
+from app.models.scheduled_job import ScheduledJob
 
 
 def seed():
@@ -176,6 +179,34 @@ def seed():
         db.add(SuiteScenario(suite_id=suite_bez_zamowien.id, scenario_id=s1.id, order=1))
         db.add(SuiteScenario(suite_id=suite_bez_zamowien.id, scenario_id=s2.id, order=2))
 
+        # ── Alert types ───────────────────────────────────────────────────────
+        at_bug    = AlertType(name="Błąd",           slug="bug",       color="#ff4444", description="Błąd krytyczny")
+        at_verify = AlertType(name="Do weryfikacji", slug="to_verify", color="#ffaa00", description="Wymaga sprawdzenia")
+        at_config = AlertType(name="Konfiguracja",   slug="config",    color="#4488ff", description="Problem z konfiguracją scenariusza")
+        db.add_all([at_bug, at_verify, at_config])
+        db.flush()
+
+        # ── Alert configs ─────────────────────────────────────────────────────
+        alert_configs = [
+            AlertConfig(business_rule="HOME_NOT_LOADED",             name="Strona główna nie załadowała się",                      alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="PRODUCT_UNAVAILABLE",         name="Produkt niedostępny na listingu",                       alert_type_id=at_verify.id, is_active=True),
+            AlertConfig(business_rule="CART0_EMPTY",                 name="Koszyk pusty po dodaniu produktu",                      alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="CART0_NO_PRICE",              name="Brak ceny w koszyku",                                   alert_type_id=at_verify.id, is_active=True),
+            AlertConfig(business_rule="CART1_DELIVERY_UNAVAILABLE",  name="Oczekiwana dostawa niedostępna",                        alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="CART1_DELIVERY_NOT_SELECTED", name="Nie można wybrać dostawy",                              alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="CART1_POSTAL_CODE_MISSING",   name="Brak kodu pocztowego w konfiguracji scenariusza",       alert_type_id=at_config.id, is_active=True),
+            AlertConfig(business_rule="CART1_CUTOFF_MISMATCH",       name="Godzina graniczna niezgodna z oczekiwaną",              alert_type_id=at_verify.id, is_active=True),
+            AlertConfig(business_rule="CART2_PAYMENT_UNAVAILABLE",   name="Oczekiwana płatność niedostępna",                      alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="CART2_PAYMENT_NOT_SELECTED",  name="Nie można wybrać płatności",                           alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="CART3_POSTAL_MISMATCH",       name="Kod pocztowy w adresie niezgodny z oczekiwanym",        alert_type_id=at_verify.id, is_active=True),
+            AlertConfig(business_rule="CART4_PRICE_MISMATCH",        name="Cena w podsumowaniu różni się od oczekiwanej",          alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="CART4_DELIVERY_MISMATCH",     name="Dostawa w podsumowaniu niezgodna z wybraną",            alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="CART4_PAYMENT_MISMATCH",      name="Płatność w podsumowaniu niezgodna z wybraną",           alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="GLOBAL_PRICE_CHANGED",        name="Cena produktu zmieniła się między listingiem a koszem", alert_type_id=at_bug.id,    is_active=True),
+            AlertConfig(business_rule="scenario.unexpected_error",   name="Nieoczekiwany błąd scenariusza",                       alert_type_id=at_bug.id,    is_active=True),
+        ]
+        db.add_all(alert_configs)
+
         db.commit()
 
         print("OK Seed zakończony. Dane w bazie:")
@@ -188,6 +219,8 @@ def seed():
         print(f"  Flagi: {flag_skip_login.name}, {flag_random_login.name}, "
               f"{flag_cc_operator.name}, {flag_company_address.name}, "
               f"{flag_different_delivery_address.name}")
+        print(f"  Alert types: bug, to_verify, config")
+        print(f"  Alert configs: {len(alert_configs)} reguł")
 
     except Exception as e:
         db.rollback()

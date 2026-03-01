@@ -10,6 +10,7 @@ class RunStatus(str, enum.Enum):
     SUCCESS = "success"
     FAILED = "failed"
     SKIPPED = "skipped"
+    CANCELLED = "cancelled"
 
 
 class ScenarioRun(Base):

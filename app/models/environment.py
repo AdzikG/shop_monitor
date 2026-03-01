@@ -30,5 +30,5 @@ class Environment(Base):
     def __repr__(self) -> str:
         return f"<Environment {self.name} — {self.base_url}>"
 
-    # Nowa relacja  
     suite_runs: Mapped[list["SuiteRun"]] = relationship(back_populates="environment")
+    scheduled_jobs: Mapped[list["ScheduledJob"]] = relationship(back_populates="environment", cascade="all, delete-orphan")
