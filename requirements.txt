@@ -12,7 +12,7 @@ sqlalchemy==2.0.36
 alembic==1.13.3
 
 # MySQL (opcjonalnie — potrzebne gdy przejdziesz z SQLite na MySQL)
-# pymysql==1.1.1
+pymysql==1.1.1
 
 # Utilities
 python-dotenv==1.0.1

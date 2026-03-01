@@ -24,6 +24,10 @@ app = FastAPI(title="WACEK - Strażnik TERGsasu", lifespan=lifespan)
 # Static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+import os
+os.makedirs("screenshots", exist_ok=True)
+app.mount("/screenshots", StaticFiles(directory="screenshots"), name="screenshots")
+
 # Routery
 app.include_router(auth_router.router)
 app.include_router(dashboard.router)

@@ -53,6 +53,55 @@
     {% endif %}
 </div>
 
+{% set screenshots_list = [] %}
+{% for snapshot in snapshots %}
+    {% if snapshot.raw_data and snapshot.raw_data.get('screenshot') %}
+        {% set _ = screenshots_list.append(snapshot) %}
+    {% endif %}
+{% endfor %}
+
+{% if screenshots_list %}
+<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
+    Zrzuty ekranu
+</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+    {% for snapshot in screenshots_list %}
+    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 0.75rem; text-align: center; cursor: pointer;"
+         onclick="openScreenshot('/{{ snapshot.raw_data.screenshot }}', '{{ snapshot.stage }}')">
+        <img src="/{{ snapshot.raw_data.screenshot }}"
+             alt="{{ snapshot.stage }}"
+             style="max-height: 180px; max-width: 260px; object-fit: contain; display: block; margin: 0 auto;">
+        <div class="mono" style="font-size: 11px; margin-top: 0.5rem; color: var(--text-secondary);">{{ snapshot.stage }}</div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Lightbox -->
+<div id="screenshotModal"
+     style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;"
+     onclick="closeScreenshot(event)">
+    <div style="max-width: 95vw; max-height: 95vh; text-align: center;">
+        <div style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;" id="screenshotLabel"></div>
+        <img id="screenshotImg" src="" alt=""
+             style="max-width: 95vw; max-height: 90vh; object-fit: contain; border: 1px solid var(--border);">
+    </div>
+</div>
+
+<script>
+function openScreenshot(src, stage) {
+    document.getElementById('screenshotImg').src = src;
+    document.getElementById('screenshotLabel').textContent = stage;
+    const modal = document.getElementById('screenshotModal');
+    modal.style.display = 'flex';
+}
+function closeScreenshot(event) {
+    if (event.target === document.getElementById('screenshotModal')) {
+        document.getElementById('screenshotModal').style.display = 'none';
+    }
+}
+</script>
+{% endif %}
+
 <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
     Alerty ({{ alerts | selectattr('is_counted') | list | length }} zliczonych)
 </h2>

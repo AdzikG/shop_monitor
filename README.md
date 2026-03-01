@@ -1,86 +1,100 @@
-# Shop Monitor POC
+# Shop Monitor
 
-Proof of Concept — monitoring procesów koszykowych z Playwright async + POM + Alert Engine.
+Narzędzie do monitorowania procesów koszykowych e-commerce z panelem webowym (FastAPI + Playwright + SQLite/MySQL).
 
-## Struktura
+## Wymagania
 
-```
-shop_monitor_poc/
-├── pages/
-│   ├── base_page.py              # klasa bazowa POM
-│   └── cart/
-│       └── cart_0_list.py        # listing + dodanie do koszyka
-├── core/
-│   └── alert_engine.py           # silnik alertów → JSON
-├── scenarios/
-│   ├── scenario_executor.py      # orchestrator scenariusza
-│   └── scenarios.json            # konfiguracja scenariuszy
-├── main.py                       # punkt startowy
-├── requirements.txt
-└── results/                      # tutaj trafiają wyniki (tworzony automatycznie)
-```
+- Python 3.11+
+- Git
 
 ## Instalacja
 
 ```bash
-# 1. Utwórz wirtualne środowisko
+# 1. Utwórz i aktywuj wirtualne środowisko (Windows)
 python -m venv venv
-
-# 2. Aktywuj (Windows)
 venv\Scripts\activate
 
-# 3. Zainstaluj zależności
+# 2. Zainstaluj zależności
 pip install -r requirements.txt
 
-# 4. Zainstaluj przeglądarkę Chromium
+# 3. Zainstaluj przeglądarkę Chromium
 playwright install chromium
+
+# 4. Utwórz bazę danych i załaduj dane startowe
+alembic upgrade head
+python seed.py
+python seed_alert_types.py
 ```
 
-## Uruchomienie
+## Uruchomienie panelu webowego
 
 ```bash
-# Domyślnie — 2 scenariusze równolegle, widać okno przeglądarki
+python run_panel.py
+```
+
+Panel dostępny pod adresem: http://127.0.0.1:8000
+
+## Uruchomienie scenariuszy
+
+```bash
+# Pierwszy aktywny suite (domyślnie)
 python main.py
 
-# Bez okna przeglądarki (jak na serwerze Linux)
-python main.py --headless
+# Wybrany suite na wybranym środowisku, 2 równoległe scenariusze
+python main.py --suite 1 --environment 1 --workers 2
 
-# Zmień liczbę równoległych scenariuszy
-python main.py --workers 3
+# Pojedynczy scenariusz
+python main.py --scenario 5 --environment 1
+
+# Tryb headless (bez okna przeglądarki)
+python main.py --suite 1 --environment 1 --headless
 ```
 
-## Wyniki
+## Konfiguracja MySQL (opcjonalnie)
 
-Po uruchomieniu w folderze `results/` znajdziesz:
-- `*.log` — pełny log uruchomienia
-- `YYYY-MM-DD_HH-MM-SS/` — folder z wynikami
-  - `{run_id}.json` — alerty i wyniki scenariusza
-  - `{run_id}/` — screenshoty z każdego etapu
+Domyślnie aplikacja używa SQLite. Aby przełączyć na MySQL:
 
-## Dodawanie scenariuszy
+**1. Utwórz bazę danych w MySQL:**
 
-Edytuj plik `scenarios/scenarios.json`:
-
-```json
-[
-  {
-    "name": "Nazwa scenariusza",
-    "listing_url": "https://www.amazon.pl/s?k=szukana+fraza",
-    "should_order": false,
-    "extra_params": {}
-  }
-]
+```sql
+CREATE DATABASE shop_monitor CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-## Przykładowy wynik JSON
+**2. Dodaj `DATABASE_URL` do pliku `.env`:**
 
-```json
-{
-  "run_id": "Elektronika_laptop_a1b2c3d4",
-  "scenario_name": "Elektronika - laptop",
-  "status": "success",
-  "total_alerts": 0,
-  "counted_alerts": 0,
-  "alerts": []
-}
+```
+DATABASE_URL=mysql+pymysql://user:password@localhost:3306/shop_monitor
+```
+
+**3. Zaktualizuj `alembic.ini` (linia `sqlalchemy.url`):**
+
+```ini
+sqlalchemy.url = mysql+pymysql://user:password@localhost:3306/shop_monitor
+```
+
+**4. Zastosuj migracje i załaduj dane:**
+
+```bash
+alembic upgrade head
+python seed.py
+python seed_alert_types.py
+```
+
+## Struktura katalogów
+
+```
+shop_monitor/
+├── app/                  # panel webowy (FastAPI + Jinja2 + HTMX)
+│   ├── models/           # modele SQLAlchemy
+│   ├── routers/          # endpointy API
+│   └── templates/        # szablony HTML
+├── core/                 # silnik alertów, rejestr uruchomień
+├── scenarios/            # logika scenariuszy
+│   ├── pages/            # Page Object Model (Playwright)
+│   └── rules/            # reguły biznesowe
+├── alembic/              # migracje bazy danych
+├── main.py               # punkt startowy CLI
+├── run_panel.py          # punkt startowy panelu
+├── seed.py               # dane startowe (środowiska, suite, scenariusze)
+└── seed_alert_types.py   # typy alertów
 ```
