@@ -94,36 +94,22 @@ async def suite_run_detail(suite_run_id: int, request: Request, db: Session = De
     })
 
 
-@router.get("/suite-runs/{suite_run_id}/{id}")
-async def scenario_run_detail(
-    suite_run_id: int,
-    id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    suite_run = db.query(SuiteRun).filter(SuiteRun.id == suite_run_id).first()
-    if not suite_run:
-        raise HTTPException(status_code=404, detail="Suite run not found")
+@router.get("/suite-runs/{suite_run_id}/logs", response_class=HTMLResponse)
+async def suite_run_logs(suite_run_id: int):
+    log_file = Path(f"logs/suite_run_{suite_run_id}.log")
 
-    run = db.query(ScenarioRun).filter(
-        ScenarioRun.suite_run_id == suite_run_id,
-        ScenarioRun.id == id,
-    ).first()
-    if not run:
-        raise HTTPException(status_code=404, detail="Scenario run not found")
+    if not log_file.exists():
+        return "<div style='padding: 2rem; text-align: center; color: var(--text-secondary);'>Brak logów</div>"
 
-    alerts = db.query(Alert).filter(Alert.run_id == run.id).all()
-    snapshots = db.query(BasketSnapshot).filter(BasketSnapshot.run_id == run.id).all()
-    api_errors = db.query(ApiError).filter(ApiError.run_id == run.id).all()
-
-    return templates.TemplateResponse("suite_run_scenario_detail.html", {
-        "request": request,
-        "suite_run": suite_run,
-        "run": run,
-        "alerts": alerts,
-        "snapshots": snapshots,
-        "api_errors": api_errors,
-    })
+    try:
+        content = log_file.read_text(encoding='utf-8')
+        escaped = html.escape(content)
+        return f"""<pre style='margin:0; padding:1rem; background:var(--bg-dark); color:var(--text-primary);
+                    font-size:11px; line-height:1.6; overflow-x:auto;
+                    font-family:"Fira Code",monospace;
+                    white-space:pre-wrap; word-wrap:break-word;'>{escaped}</pre>"""
+    except Exception as e:
+        return f"<div style='padding:2rem; color:var(--accent-red);'>Błąd ładowania logów: {e}</div>"
 
 
 @router.post("/suite-runs/{suite_run_id}/cancel")
@@ -158,19 +144,33 @@ async def cancel_suite_run(suite_run_id: int, db: Session = Depends(get_db)):
     return JSONResponse({"ok": cancelled, "suite_run_id": suite_run_id})
 
 
-@router.get("/suite-runs/{suite_run_id}/logs", response_class=HTMLResponse)
-async def suite_run_logs(suite_run_id: int):
-    log_file = Path(f"logs/suite_run_{suite_run_id}.log")
+@router.get("/suite-runs/{suite_run_id}/{id}")
+async def scenario_run_detail(
+    suite_run_id: int,
+    id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    suite_run = db.query(SuiteRun).filter(SuiteRun.id == suite_run_id).first()
+    if not suite_run:
+        raise HTTPException(status_code=404, detail="Suite run not found")
 
-    if not log_file.exists():
-        return "<div style='padding: 2rem; text-align: center; color: var(--text-secondary);'>Brak logów</div>"
+    run = db.query(ScenarioRun).filter(
+        ScenarioRun.suite_run_id == suite_run_id,
+        ScenarioRun.id == id,
+    ).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Scenario run not found")
 
-    try:
-        content = log_file.read_text(encoding='utf-8')
-        escaped = html.escape(content)
-        return f"""<pre style='margin:0; padding:1rem; background:var(--bg-dark); color:var(--text-primary);
-                    font-size:11px; line-height:1.6; overflow-x:auto;
-                    font-family:"Fira Code",monospace;
-                    white-space:pre-wrap; word-wrap:break-word;'>{escaped}</pre>"""
-    except Exception as e:
-        return f"<div style='padding:2rem; color:var(--accent-red);'>Błąd ładowania logów: {e}</div>"
+    alerts = db.query(Alert).filter(Alert.run_id == run.id).all()
+    snapshots = db.query(BasketSnapshot).filter(BasketSnapshot.run_id == run.id).all()
+    api_errors = db.query(ApiError).filter(ApiError.run_id == run.id).all()
+
+    return templates.TemplateResponse("suite_run_scenario_detail.html", {
+        "request": request,
+        "suite_run": suite_run,
+        "run": run,
+        "alerts": alerts,
+        "snapshots": snapshots,
+        "api_errors": api_errors,
+    })

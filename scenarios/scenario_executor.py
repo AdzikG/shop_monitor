@@ -158,6 +158,13 @@ class ScenarioExecutor:
             self.scenario_run.screenshot_url = last
 
         snapshots = []
+        if rd.home:
+            snapshots.append(BasketSnapshot(
+                run_id=self.scenario_run.id,
+                stage='home',
+                total_price=None,
+                raw_data={'screenshot': result.screenshots.get('home')},
+            ))
         if rd.listing:
             snapshots.append(BasketSnapshot(
                 run_id=self.scenario_run.id,
