@@ -1,5 +1,5 @@
 """
-Uruchamia panel webowy Shop Monitor.
+Uruchamia panel webowy WACEK - Strażnik TERGsasu.
 
 Uzycie:
     python run_panel.py                # lokalnie port 8000
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         idx = sys.argv.index("--host")
         host = sys.argv[idx + 1]
     
-    print(f"Starting Shop Monitor panel at http://{host}:{port}")
+    print(f"Starting WACEK - Strażnik TERGsasu panel at http://{host}:{port}")
     print("Press Ctrl+C to stop")
     
     uvicorn.run("app.main:app", host=host, port=port, reload=False)

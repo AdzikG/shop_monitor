@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     scheduler.stop()
 
 
-app = FastAPI(title="Shop Monitor", lifespan=lifespan)
+app = FastAPI(title="WACEK - Strażnik TERGsasu", lifespan=lifespan)
 
 # Static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
