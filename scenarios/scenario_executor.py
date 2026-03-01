@@ -100,7 +100,10 @@ class ScenarioExecutor:
         """Uruchamia Playwright i przekazuje sterowanie do ShopRunner."""
 
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=self.headless)
+            browser = await p.chromium.launch(
+                headless=self.headless,
+                args=["--no-sandbox", "--disable-dev-shm-usage"],
+            )
             browser_context = await browser.new_context(
                 viewport={'width': 390, 'height': 844} if context.is_mobile else {'width': 1280, 'height': 720},
             )

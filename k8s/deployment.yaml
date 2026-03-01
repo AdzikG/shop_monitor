@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shop-monitor
+  namespace: default
+spec:
+  # Tylko 1 replika — APScheduler nie obsluguje distributed locking
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shop-monitor
+  template:
+    metadata:
+      labels:
+        app: shop-monitor
+    spec:
+      containers:
+        - name: shop-monitor
+          image: your-registry/shop-monitor:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: shop-monitor-secret
+                  key: DATABASE_URL
+            - name: PANEL_PIN
+              valueFrom:
+                secretKeyRef:
+                  name: shop-monitor-secret
+                  key: PANEL_PIN
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          # Chromium wymaga /dev/shm wiekszego niz domyslne 64MB
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
