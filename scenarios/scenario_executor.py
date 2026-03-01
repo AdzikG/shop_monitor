@@ -5,16 +5,18 @@ Używa ScenarioContext + ShopRunner zamiast bezpośrednich wywołań Playwright.
 
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 from playwright.async_api import async_playwright
 from sqlalchemy.orm import Session
 
+from app.models.basket_snapshot import BasketSnapshot
 from app.models.run import ScenarioRun, RunStatus
 from app.models.scenario import Scenario
 from app.models.environment import Environment
 from core.alert_engine import AlertEngine
 from scenarios.context import ScenarioContext
-from scenarios.shop_runner import ShopRunner
+from scenarios.shop_runner import ShopRunner, ShopRunResult
 
 logger = logging.getLogger(__name__)
 
@@ -103,8 +105,13 @@ class ScenarioExecutor:
             page = await browser_context.new_page()
 
             try:
-                runner = ShopRunner(page=page, context=context)
+                screenshot_dir = f"screenshots/{self.suite_run_id}/{self.scenario_run.id}"
+                Path(screenshot_dir).mkdir(parents=True, exist_ok=True)
+
+                runner = ShopRunner(page=page, context=context, screenshot_dir=screenshot_dir)
                 result = await runner.run()
+
+                self._save_run_data(result)
 
                 for alert in result.alerts:
                     self.alert_engine.add_alert(
@@ -129,3 +136,39 @@ class ScenarioExecutor:
             finally:
                 await browser_context.close()
                 await browser.close()
+
+    def _save_run_data(self, result: ShopRunResult) -> None:
+        rd = result.run_data
+
+        if rd.listing and rd.listing.name:
+            self.scenario_run.product_name = rd.listing.name
+
+        if result.screenshots:
+            last = list(result.screenshots.values())[-1]
+            self.scenario_run.screenshot_url = last
+
+        snapshots = []
+        if rd.cart0:
+            snapshots.append(BasketSnapshot(
+                run_id=self.scenario_run.id,
+                stage='cart0',
+                total_price=rd.cart0.total_price,
+                raw_data={'screenshot': result.screenshots.get('cart0')},
+            ))
+        if rd.cart1:
+            snapshots.append(BasketSnapshot(
+                run_id=self.scenario_run.id,
+                stage='cart1',
+                delivery_price=rd.cart1.price,
+                raw_data={'screenshot': result.screenshots.get('cart1')},
+            ))
+        if rd.cart4:
+            snapshots.append(BasketSnapshot(
+                run_id=self.scenario_run.id,
+                stage='cart4',
+                total_price=rd.cart4.total_price,
+                delivery_price=rd.cart4.delivery_price,
+                raw_data={'screenshot': result.screenshots.get('cart4')},
+            ))
+        if snapshots:
+            self.db.add_all(snapshots)

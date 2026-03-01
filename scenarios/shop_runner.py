@@ -37,6 +37,7 @@ class ShopRunResult:
     alerts: list[AlertResult] = field(default_factory=list)
     stopped_at: str | None = None
     success: bool = True
+    screenshots: dict[str, str] = field(default_factory=dict)  # stage → file path
 
 
 class StopTest(Exception):
@@ -52,7 +53,7 @@ class StopTest(Exception):
 
 
 class ShopRunner:
-    def __init__(self, page: Page, context: ScenarioContext):
+    def __init__(self, page: Page, context: ScenarioContext, screenshot_dir: str | None = None):
         self.page = page
         self.context = context
         self.run_data = RunData()
@@ -60,6 +61,20 @@ class ShopRunner:
         # Instrukcje akumulowane między etapami
         self.instructions: dict = {}
         self._current_stage = 'init'
+        self.screenshot_dir = screenshot_dir
+        self.screenshots: dict[str, str] = {}
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    async def _screenshot(self, stage: str) -> None:
+        if not self.screenshot_dir:
+            return
+        path = f"{self.screenshot_dir}/{stage}.png"
+        try:
+            await self.page.screenshot(path=path)
+            self.screenshots[stage] = path
+        except Exception:
+            pass  # screenshot failure must never abort the run
 
     # ── Publiczne API ─────────────────────────────────────────────────────────
 
@@ -95,6 +110,7 @@ class ShopRunner:
                 alerts=self.alerts,
                 stopped_at=e.stage,
                 success=e.expected,
+                screenshots=self.screenshots,
             )
 
         except Exception as e:
@@ -104,12 +120,14 @@ class ShopRunner:
                 alerts=self.alerts,
                 stopped_at=self._current_stage,
                 success=False,
+                screenshots=self.screenshots,
             )
 
         return ShopRunResult(
             run_data=self.run_data,
             alerts=self.alerts,
             success=True,
+            screenshots=self.screenshots,
         )
 
     # ── Etapy ─────────────────────────────────────────────────────────────────
@@ -117,19 +135,23 @@ class ShopRunner:
     async def _run_home(self):
         self._current_stage = 'HomeScreen'
         self.run_data.home = await self._get_page(HomePage).execute(self.instructions)
+        await self._screenshot('home')
         self._process_result(HomeRules(self.context).check(self.run_data), 'home')
 
     async def _run_listing(self):
         self._current_stage = 'Listing'
         self.run_data.listing = await self._get_page(ListingPage).execute(self.instructions)
+        await self._screenshot('listing')
         self._process_result(ListingRules(self.context).check(self.run_data), 'listing')
 
     async def _run_cart0(self):
         self.run_data.cart0 = await self._get_page(Cart0Page).execute(self.instructions)
+        await self._screenshot('cart0')
         self._process_result(Cart0Rules(self.context).check(self.run_data), 'cart0')
 
     async def _run_cart1(self):
         self.run_data.cart1 = await self._get_page(Cart1Page).execute(self.instructions)
+        await self._screenshot('cart1')
         self._process_result(Cart1Rules(self.context).check(self.run_data), 'cart1')
 
         if self.context.flag('stop_at_cart1'):
@@ -137,6 +159,7 @@ class ShopRunner:
 
     async def _run_cart2(self):
         self.run_data.cart2 = await self._get_page(Cart2Page).execute(self.instructions)
+        await self._screenshot('cart2')
         self._process_result(Cart2Rules(self.context).check(self.run_data), 'cart2')
 
         if self.context.flag('stop_at_cart2'):
@@ -144,6 +167,7 @@ class ShopRunner:
 
     async def _run_cart3(self):
         self.run_data.cart3 = await self._get_page(Cart3Page).execute(self.instructions)
+        await self._screenshot('cart3')
         self._process_result(Cart3Rules(self.context).check(self.run_data), 'cart3')
 
         if self.context.flag('stop_at_cart3'):
@@ -159,9 +183,8 @@ class ShopRunner:
             )
 
         self.run_data.cart4 = await self._get_page(Cart4Page).execute(self.instructions)
+        await self._screenshot('cart4')
         self._process_result(Cart4Rules(self.context).check(self.run_data), 'cart4')
-
-    # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _get_page(self, desktop_cls, mobile_cls=None):
         """Zwraca odpowiednią klasę page dla desktop/mobile."""
