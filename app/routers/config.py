@@ -8,6 +8,7 @@ from app.models.alert_config import AlertConfig
 from app.models.suite import Suite
 from app.models.scenario import Scenario
 from app.models.scheduled_job import ScheduledJob
+from app.models.api_error_exclusion import ApiErrorExclusion
 from app.templates import templates
 
 router = APIRouter(tags=["config"])
@@ -21,6 +22,7 @@ async def config_hub(request: Request, db: Session = Depends(get_db)):
     suite_count = db.query(Suite).filter_by(is_active=True).count()
     scenario_count = db.query(Scenario).filter_by(is_active=True).count()
     scheduler_count = db.query(ScheduledJob).filter_by(is_enabled=True).count()
+    api_exclusions_count = db.query(ApiErrorExclusion).count()
 
     return templates.TemplateResponse("config.html", {
         "request": request,
@@ -30,4 +32,5 @@ async def config_hub(request: Request, db: Session = Depends(get_db)):
         "suite_count": suite_count,
         "scenario_count": scenario_count,
         "scheduler_count": scheduler_count,
+        "api_exclusions_count": api_exclusions_count,
     })

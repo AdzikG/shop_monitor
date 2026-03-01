@@ -38,6 +38,7 @@ class ShopRunResult:
     stopped_at: str | None = None
     success: bool = True
     screenshots: dict[str, str] = field(default_factory=dict)  # stage → file path
+    api_errors: list[dict] = field(default_factory=list)
 
 
 class StopTest(Exception):
@@ -53,7 +54,7 @@ class StopTest(Exception):
 
 
 class ShopRunner:
-    def __init__(self, page: Page, context: ScenarioContext, screenshot_dir: str | None = None):
+    def __init__(self, page: Page, context: ScenarioContext, screenshot_dir: str | None = None, api_error_exclusions: list[dict] | None = None):
         self.page = page
         self.context = context
         self.run_data = RunData()
@@ -63,8 +64,24 @@ class ShopRunner:
         self._current_stage = 'init'
         self.screenshot_dir = screenshot_dir
         self.screenshots: dict[str, str] = {}
+        self.api_errors: list[dict] = []
+        self._api_exclusions = api_error_exclusions or []
 
     # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _is_excluded(self, url: str, status: int, body: str | None) -> bool:
+        url_lower = url.lower()
+        body_lower = (body or '').lower()
+        for excl in self._api_exclusions:
+            if excl['endpoint_pattern'].lower() not in url_lower:
+                continue
+            if excl['status_code'] is not None and excl['status_code'] != status:
+                continue
+            bp = excl.get('response_body_pattern')
+            if bp is not None and bp.lower() not in body_lower:
+                continue
+            return True
+        return False
 
     async def _screenshot(self, stage: str) -> None:
         if not self.screenshot_dir:
@@ -79,6 +96,23 @@ class ShopRunner:
     # ── Publiczne API ─────────────────────────────────────────────────────────
 
     async def run(self) -> ShopRunResult:
+        async def _on_response(response) -> None:
+            if response.status <= 400:
+                return
+            try:
+                body = await response.text()
+            except Exception:
+                body = None
+            if not self._is_excluded(response.url, response.status, body):
+                self.api_errors.append({
+                    'endpoint':      response.url,
+                    'method':        response.request.method,
+                    'status_code':   response.status,
+                    'response_body': body,
+                })
+
+        self.page.on('response', _on_response)
+
         try:
             await self._run_home()
             await self._run_listing()
@@ -111,6 +145,7 @@ class ShopRunner:
                 stopped_at=e.stage,
                 success=e.expected,
                 screenshots=self.screenshots,
+                api_errors=self.api_errors,
             )
 
         except Exception as e:
@@ -121,6 +156,7 @@ class ShopRunner:
                 stopped_at=self._current_stage,
                 success=False,
                 screenshots=self.screenshots,
+                api_errors=self.api_errors,
             )
 
         return ShopRunResult(
@@ -128,6 +164,7 @@ class ShopRunner:
             alerts=self.alerts,
             success=True,
             screenshots=self.screenshots,
+            api_errors=self.api_errors,
         )
 
     # ── Etapy ─────────────────────────────────────────────────────────────────

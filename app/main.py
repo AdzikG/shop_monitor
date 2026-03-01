@@ -6,6 +6,7 @@ from app.routers import (
     alert_configs, suites, auth_router, dictionaries, flags, config
 )
 from app.routers import scheduler_router
+from app.routers import api_error_exclusions
 from app import scheduler
 
 
@@ -36,6 +37,7 @@ app.include_router(dictionaries.router)
 app.include_router(flags.router)
 app.include_router(config.router)
 app.include_router(scheduler_router.router)
+app.include_router(api_error_exclusions.router)
 
 
 @app.get("/")

@@ -133,6 +133,7 @@
             <th>Endpoint</th>
             <th>Status</th>
             <th>Czas</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -148,6 +149,11 @@
                 </span>
             </td>
             <td class="mono">{{ err.captured_at | local_time }}</td>
+            <td>
+                <form method="post" action="/api-error-exclusions/from-error/{{ err.id }}">
+                    <button type="submit" class="btn btn-sm">Wyklucz</button>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

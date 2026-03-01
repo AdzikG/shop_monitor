@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Wykluczenia błędów API — Shop Monitor{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
+        Wykluczenia błędów API
+    </h2>
+</div>
+
+{% if exclusions %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Pattern URL</th>
+            <th>Status</th>
+            <th>Pattern body</th>
+            <th>Notatka</th>
+            <th>Dodano</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for excl in exclusions %}
+        <tr>
+            <td class="mono">{{ excl.id }}</td>
+            <td class="mono" style="font-size: 11px; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ excl.endpoint_pattern }}</td>
+            <td class="mono">{{ excl.status_code or '—' }}</td>
+            <td class="mono" style="font-size: 11px;">{{ excl.response_body_pattern or '—' }}</td>
+            <td style="font-size: 11px; color: var(--text-secondary);">{{ excl.note or '—' }}</td>
+            <td class="mono">{{ excl.created_at | local_time }}</td>
+            <td>
+                <form method="post" action="/api-error-exclusions/{{ excl.id }}/delete">
+                    <button type="submit" class="btn btn-sm" style="color: var(--accent-red);">Usuń</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--text-secondary);">
+    Brak wykluczeń. Kliknij "Wyklucz" przy błędzie API w szczegółach runu.
+</div>
+{% endif %}
+{% endblock %}

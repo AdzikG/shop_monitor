@@ -10,6 +10,8 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 from sqlalchemy.orm import Session
 
+from app.models.api_error import ApiError
+from app.models.api_error_exclusion import ApiErrorExclusion
 from app.models.basket_snapshot import BasketSnapshot
 from app.models.run import ScenarioRun, RunStatus
 from app.models.scenario import Scenario
@@ -108,7 +110,15 @@ class ScenarioExecutor:
                 screenshot_dir = f"screenshots/{self.suite_run_id}/{self.scenario_run.id}"
                 Path(screenshot_dir).mkdir(parents=True, exist_ok=True)
 
-                runner = ShopRunner(page=page, context=context, screenshot_dir=screenshot_dir)
+                exclusions = [
+                    {
+                        'endpoint_pattern':      e.endpoint_pattern,
+                        'status_code':           e.status_code,
+                        'response_body_pattern': e.response_body_pattern,
+                    }
+                    for e in self.db.query(ApiErrorExclusion).all()
+                ]
+                runner = ShopRunner(page=page, context=context, screenshot_dir=screenshot_dir, api_error_exclusions=exclusions)
                 result = await runner.run()
 
                 self._save_run_data(result)
@@ -148,6 +158,13 @@ class ScenarioExecutor:
             self.scenario_run.screenshot_url = last
 
         snapshots = []
+        if rd.listing:
+            snapshots.append(BasketSnapshot(
+                run_id=self.scenario_run.id,
+                stage='listing',
+                total_price=None,
+                raw_data={'screenshot': result.screenshots.get('listing')},
+            ))
         if rd.cart0:
             snapshots.append(BasketSnapshot(
                 run_id=self.scenario_run.id,
@@ -172,3 +189,15 @@ class ScenarioExecutor:
             ))
         if snapshots:
             self.db.add_all(snapshots)
+
+        for err in result.api_errors:
+            body = err.get('response_body')
+            if body and len(body) > 250:
+                body = body[:250]
+            self.db.add(ApiError(
+                run_id=self.scenario_run.id,
+                endpoint=err['endpoint'],
+                method=err['method'],
+                status_code=err['status_code'],
+                response_body=body,
+            ))
