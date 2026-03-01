@@ -7,7 +7,7 @@ Usuwa:
 - logi z katalogu logs/
 
 Zachowuje:
-- suites, scenarios, environments, suite_scenarios, suite_environments
+- suites, scenarios, environments, suite_scenarios
 - alert_configs, alert_types
 
 Użycie:

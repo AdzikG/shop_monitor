@@ -2,7 +2,6 @@
 from app.models.base import Base
 from app.models.environment import Environment
 from app.models.suite import Suite
-from app.models.suite_environment import SuiteEnvironment
 from app.models.suite_scenario import SuiteScenario
 from app.models.scenario import Scenario
 from app.models.suite_run import SuiteRun

@@ -10,6 +10,9 @@ from datetime import datetime, timezone
 from database import get_db
 from app.models.suite_run import SuiteRun, SuiteRunStatus
 from app.models.run import ScenarioRun, RunStatus
+from app.models.alert import Alert
+from app.models.basket_snapshot import BasketSnapshot
+from app.models.api_error import ApiError
 from app.templates import templates
 from core import runner_registry
 
@@ -88,6 +91,38 @@ async def suite_run_detail(suite_run_id: int, request: Request, db: Session = De
         "scenario_runs": scenario_runs,
         "alert_groups": alert_groups,
         "is_running": is_running,
+    })
+
+
+@router.get("/suite-runs/{suite_run_id}/{id}")
+async def scenario_run_detail(
+    suite_run_id: int,
+    id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    suite_run = db.query(SuiteRun).filter(SuiteRun.id == suite_run_id).first()
+    if not suite_run:
+        raise HTTPException(status_code=404, detail="Suite run not found")
+
+    run = db.query(ScenarioRun).filter(
+        ScenarioRun.suite_run_id == suite_run_id,
+        ScenarioRun.id == id,
+    ).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Scenario run not found")
+
+    alerts = db.query(Alert).filter(Alert.run_id == run.id).all()
+    snapshots = db.query(BasketSnapshot).filter(BasketSnapshot.run_id == run.id).all()
+    api_errors = db.query(ApiError).filter(ApiError.run_id == run.id).all()
+
+    return templates.TemplateResponse("suite_run_scenario_detail.html", {
+        "request": request,
+        "suite_run": suite_run,
+        "run": run,
+        "alerts": alerts,
+        "snapshots": snapshots,
+        "api_errors": api_errors,
     })
 
 

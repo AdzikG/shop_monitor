@@ -11,6 +11,7 @@ from app.models.alert_group import (
     AlertGroup, AlertStatus, ResolutionType, RESOLUTION_TO_STATUS
 )
 from app.models.suite_run import SuiteRun
+from app.models.run import ScenarioRun
 from app.models.environment import Environment
 from app.models.scenario import Scenario
 from app.templates import templates
@@ -99,9 +100,27 @@ async def alerts_list(
             pass
 
     scenarios_map = {}
+    scenario_run_map = {}
     if all_scenario_ids:
         scenarios = db.query(Scenario).filter(Scenario.id.in_(all_scenario_ids)).all()
         scenarios_map = {s.id: s for s in scenarios}
+
+        all_suite_run_ids = {
+            ag.last_suite_run_id
+            for ag in alert_groups + backlog
+            if ag.last_suite_run_id is not None
+        }
+        if all_suite_run_ids:
+            runs = (
+                db.query(ScenarioRun)
+                .filter(
+                    ScenarioRun.suite_run_id.in_(all_suite_run_ids),
+                    ScenarioRun.scenario_id.in_(all_scenario_ids),
+                )
+                .all()
+            )
+            for r in runs:
+                scenario_run_map[f"{r.suite_run_id}_{r.scenario_id}"] = r.id
 
     return templates.TemplateResponse("alerts_list.html", {
         "request": request,
@@ -115,6 +134,7 @@ async def alerts_list(
         "total_closed": total_closed,
         "environments": environments,
         "scenarios_map": scenarios_map,
+        "scenario_run_map": scenario_run_map,
         "resolution_types": [r.value for r in ResolutionType],
     })
 

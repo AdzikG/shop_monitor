@@ -9,7 +9,6 @@ Użycie:
 from database import SessionLocal
 from app.models.environment import Environment
 from app.models.suite import Suite
-from app.models.suite_environment import SuiteEnvironment
 from app.models.scenario import Scenario
 from app.models.suite_scenario import SuiteScenario
 from app.models.dictionary import Dictionary
@@ -125,20 +124,6 @@ def seed():
         )
         db.add_all([suite_bez_zamowien, suite_manual])
         db.flush()
-
-        # ── Przypisanie Suite do Środowisk ────────────────────────────────────
-        db.add(SuiteEnvironment(
-            suite_id=suite_bez_zamowien.id,
-            environment_id=pre.id,
-            cron_expression="0 9,12,15 * * *",
-            workers_override=2,
-        ))
-        db.add(SuiteEnvironment(
-            suite_id=suite_bez_zamowien.id,
-            environment_id=prod.id,
-            cron_expression="0 9 * * *",
-            workers_override=1,
-        ))
 
         # ── Scenariusze ───────────────────────────────────────────────────────
         s1 = Scenario(

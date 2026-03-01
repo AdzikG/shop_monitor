@@ -186,9 +186,11 @@
     <tbody>
         {% for run in scenario_runs %}
         <tr>
-            <td class="mono">#{{ run.id }}</td>
+            <td class="mono">
+                <a href="/suite-runs/{{ suite_run.id }}/{{ run.id }}" class="link">#{{ run.id }}</a>
+            </td>
             <td>
-                <a href="/scenarios/{{ run.scenario_id }}" class="link">{{ run.scenario.name }}</a>
+                <a href="/suite-runs/{{ suite_run.id }}/{{ run.id }}" class="link">{{ run.scenario.name }}</a>
             </td>
             <td class="mono" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 {{ run.product_name or '—' }}

@@ -21,9 +21,6 @@ class Environment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
     # Relacje
-    suite_environments: Mapped[list["SuiteEnvironment"]] = relationship(
-        back_populates="environment", cascade="all, delete-orphan"
-    )
     runs: Mapped[list["ScenarioRun"]] = relationship(back_populates="environment")
     alerts: Mapped[list["Alert"]] = relationship(back_populates="environment")
 

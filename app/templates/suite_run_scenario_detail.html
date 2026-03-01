@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Run scenariusza #{{ run.id }} — Shop Monitor{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <a href="/suite-runs/{{ suite_run.id }}" style="color: var(--text-secondary); text-decoration: none; font-size: 11px;">← Suite Run #{{ suite_run.id }}</a>
+</div>
+
+<div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 2rem;">
+    <h1 style="font-size: 15px; margin-bottom: 1rem;">
+        <a href="/scenarios/{{ run.scenario_id }}" class="link">{{ run.scenario.name }}</a>
+    </h1>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 12px;">
+        <div>
+            <div class="stat-label">ID runu</div>
+            <div class="mono">#{{ run.id }}</div>
+        </div>
+        <div>
+            <div class="stat-label">Suite Run</div>
+            <div class="mono">
+                <a href="/suite-runs/{{ suite_run.id }}" class="link">#{{ suite_run.id }}</a>
+                — {{ suite_run.suite.name }}
+            </div>
+        </div>
+        <div>
+            <div class="stat-label">Environment</div>
+            <div class="mono">{{ run.environment.name }}</div>
+        </div>
+        <div>
+            <div class="stat-label">Status</div>
+            <span class="status {{ run.status.value }}">{{ run.status.value }}</span>
+        </div>
+        <div>
+            <div class="stat-label">Rozpoczęto</div>
+            <div class="mono">{{ run.started_at | local_time }}</div>
+        </div>
+        <div>
+            <div class="stat-label">Czas</div>
+            <div class="mono">{{ run.duration_seconds | duration }}</div>
+        </div>
+    </div>
+
+    {% if run.product_name %}
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+        <div class="stat-label">Produkt</div>
+        <div>{{ run.product_name }}</div>
+        {% if run.product_id %}
+        <div class="mono" style="color: var(--text-secondary); font-size: 11px;">ID: {{ run.product_id }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
+    Alerty ({{ alerts | selectattr('is_counted') | list | length }} zliczonych)
+</h2>
+
+{% if alerts %}
+<table style="margin-bottom: 2rem;">
+    <thead>
+        <tr>
+            <th>Typ</th>
+            <th>Reguła</th>
+            <th>Tytuł</th>
+            <th>Opis</th>
+            <th>Zliczony</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for alert in alerts %}
+        <tr>
+            <td>
+                <span class="status {{ 'failed' if alert.alert_type.value == 'bug' else 'running' }}">
+                    {{ alert.alert_type.value }}
+                </span>
+            </td>
+            <td class="mono">{{ alert.business_rule }}</td>
+            <td>{{ alert.title }}</td>
+            <td style="max-width: 400px; font-size: 11px; color: var(--text-secondary);">
+                {{ alert.description or '—' }}
+            </td>
+            <td class="mono">{{ 'Tak' if alert.is_counted else 'Nie' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+    Brak alertów dla tego runu
+</div>
+{% endif %}
+
+{% if snapshots %}
+<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
+    Snapshoty koszyka
+</h2>
+
+<table style="margin-bottom: 2rem;">
+    <thead>
+        <tr>
+            <th>Etap</th>
+            <th>Cena produktu</th>
+            <th>Dostawa</th>
+            <th>Suma</th>
+            <th>Czas</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for snapshot in snapshots %}
+        <tr>
+            <td class="mono">{{ snapshot.stage }}</td>
+            <td class="mono">{{ snapshot.product_price or '—' }}</td>
+            <td class="mono">{{ snapshot.delivery_price or '—' }}</td>
+            <td class="mono" style="font-weight: 700;">{{ snapshot.total_price or '—' }}</td>
+            <td class="mono">{{ snapshot.captured_at | local_time }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if api_errors %}
+<h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; color: var(--text-secondary);">
+    Błędy API ({{ api_errors | length }})
+</h2>
+
+<table style="margin-bottom: 2rem;">
+    <thead>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Status</th>
+            <th>Czas</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for err in api_errors %}
+        <tr>
+            <td class="mono" style="font-size: 11px;">{{ err.method }}</td>
+            <td class="mono" style="font-size: 11px; max-width: 500px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ err.endpoint }}
+            </td>
+            <td>
+                <span class="status {{ 'failed' if err.status_code >= 500 else 'running' }}">
+                    {{ err.status_code }}
+                </span>
+            </td>
+            <td class="mono">{{ err.captured_at | local_time }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% endblock %}

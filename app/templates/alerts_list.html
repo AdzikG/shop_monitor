@@ -405,7 +405,12 @@
                 <div class="scenario-links">
                     {% set scenario_ids = alert.scenario_ids | parse_json %}
                     {% for sid in scenario_ids %}
+                    {% set run_id = scenario_run_map.get(alert.last_suite_run_id ~ '_' ~ sid) %}
+                    {% if run_id %}
+                    <a href="/suite-runs/{{ alert.last_suite_run_id }}/{{ run_id }}" class="scenario-link">#{{ sid }}</a>
+                    {% else %}
                     <a href="/scenarios/{{ sid }}" class="scenario-link">#{{ sid }}</a>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </td>

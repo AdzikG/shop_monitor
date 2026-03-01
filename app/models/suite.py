@@ -20,9 +20,6 @@ class Suite(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
 
     # Relacje
-    suite_environments: Mapped[list["SuiteEnvironment"]] = relationship(
-        back_populates="suite", cascade="all, delete-orphan"
-    )
     suite_scenarios: Mapped[list["SuiteScenario"]] = relationship(
         back_populates="suite", cascade="all, delete-orphan"
     )

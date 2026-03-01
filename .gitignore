@@ -50,3 +50,5 @@ playwright-report/
 # Screenshots (jeśli zapisy testów)
 screenshots/
 videos/
+CLAUDE.md
+.claude/
