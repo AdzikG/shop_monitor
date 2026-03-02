@@ -22,6 +22,9 @@ playwright install chromium
 
 # 4. Utwórz bazę danych i załaduj dane startowe
 alembic upgrade head
+mkdir .\alembic\versions
+alembic revision --autogenerate -m "initial"
+alembic upgrade head
 python seed.py
 python seed_alert_types.py
 ```
