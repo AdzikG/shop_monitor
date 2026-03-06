@@ -101,12 +101,12 @@ def seed():
         pre = Environment(
             name="PRE",
             base_url="https://pre.twojsklep.pl",
-            login="test@example.com",
-            password="haslo123",
+            type="web",
         )
         prod = Environment(
             name="PROD",
             base_url="https://www.twojsklep.pl",
+            type="web",
         )
         db.add_all([pre, prod])
         db.flush()
