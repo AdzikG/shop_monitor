@@ -3,6 +3,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, now_utc
 from datetime import datetime
 import enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.run import ScenarioRun
+    from app.models.scenario import Scenario
+    from app.models.environment import Environment
 
 
 class AlertType(str, enum.Enum):

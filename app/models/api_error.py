@@ -2,6 +2,10 @@ from sqlalchemy import String, DateTime, ForeignKey, Text, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, now_utc
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.run import ScenarioRun
 
 
 class ApiError(Base):

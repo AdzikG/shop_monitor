@@ -2,6 +2,12 @@ from sqlalchemy import String, Boolean, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, now_utc
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.suite import Suite
+    from app.models.environment import Environment
+    from app.models.suite_run import SuiteRun
 
 
 class ScheduledJob(Base):

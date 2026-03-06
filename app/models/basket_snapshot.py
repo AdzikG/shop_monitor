@@ -3,6 +3,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, now_utc
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.run import ScenarioRun
 
 
 class BasketSnapshot(Base):

@@ -3,6 +3,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, now_utc
 from datetime import datetime
 import enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.suite_run import SuiteRun
+    from app.models.scenario import Scenario
+    from app.models.suite import Suite
+    from app.models.environment import Environment
+    from app.models.basket_snapshot import BasketSnapshot
+    from app.models.api_error import ApiError
+    from app.models.alert import Alert
 
 
 class RunStatus(str, enum.Enum):

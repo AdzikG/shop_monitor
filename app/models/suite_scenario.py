@@ -1,6 +1,11 @@
 from sqlalchemy import Boolean, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.suite import Suite
+    from app.models.scenario import Scenario
 
 
 class SuiteScenario(Base):

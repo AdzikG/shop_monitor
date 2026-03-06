@@ -2,6 +2,13 @@ from sqlalchemy import String, Boolean, Integer, Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, now_utc
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.suite_scenario import SuiteScenario
+    from app.models.run import ScenarioRun
+    from app.models.suite_run import SuiteRun
+    from app.models.scheduled_job import ScheduledJob
 
 
 class Suite(Base):

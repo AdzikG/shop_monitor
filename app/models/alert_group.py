@@ -2,9 +2,12 @@ from sqlalchemy import String, Integer, DateTime, ForeignKey, Text, Enum as SQLE
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from enum import Enum
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from app.models.base import Base, now_utc
+
+if TYPE_CHECKING:
+    from app.models.suite_run import SuiteRun
 
 
 class AlertStatus(str, Enum):
