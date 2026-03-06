@@ -7,30 +7,79 @@ Użycie:
     python reset_database.py              # interaktywne potwierdzenie
     python reset_database.py --force      # bez pytania
     python reset_database.py --keep-seed  # bez seed (tylko struktura)
+    python reset_database.py --only-temp  # usuwa tylko pliki tymczasowe (logi, screeny)
 """
 
 import sys
 import os
+import shutil
 from pathlib import Path
 import subprocess
 
 
-def reset_database(force: bool = False, seed: bool = True):
-    """Usuwa bazę i tworzy od nowa."""
-    
-    db_file = Path("shop_monitor.db")
-    db_shm = Path("shop_monitor.db-shm")
-    db_wal = Path("shop_monitor.db-wal")
-    
+def reset_database(force: bool = False, seed: bool = True, only_temp: bool = False):
+    """
+    Czyści pliki tymczasowe.
+    Usuwa bazę i tworzy od nowa.
+    """
+
     # Potwierdzenie
-    if not force:
-        print("⚠️  UWAGA: To usunie WSZYSTKIE dane z bazy!")
+    if not force and not only_temp:
+        print("⚠️  UWAGA: To usunie WSZYSTKIE dane z bazy oraz pliki tymczasowe!")
         confirm = input("Czy kontynuować? (yes/no): ")
         if confirm.lower() not in ['yes', 'y']:
             print("Anulowano.")
             return
+        only_temp, force = True, True
+
+    if only_temp:
+        print("\n🧹 Czyszczenie starych plików tymczasowych...")
+        # Usuń logi, screenshoty i stare wyniki
+        logs_dir = Path("logs/")
+        if logs_dir.exists():
+            deleted = 0
+            for log_file in logs_dir.glob("*.log"):
+                log_file.unlink()
+                deleted += 1
+            if deleted == 0:
+                print("   Brak starych logów")
+            else:
+                print(f"   Usunięto {deleted} logów")
+
+        screenshots_dir = Path("screenshots/")
+        if screenshots_dir.exists():
+            deleted = 0
+            for screenshots_folder in screenshots_dir.iterdir():
+                shutil.rmtree(screenshots_folder)
+                deleted += 1
+            if deleted == 0:
+                print("   Brak starych screenshots")
+            else:
+                print(f"   Usunięto {deleted} folderów ze screenami")
+
+        results_dir = Path("results/")
+        if results_dir.exists():
+            deleted = 0
+            for results_file in results_dir.iterdir():
+                if results_file.is_file():
+                    results_file.unlink()
+                    deleted += 1
+                elif results_file.is_dir():
+                    shutil.rmtree(results_file)
+                    deleted += 1
+            if deleted == 0:
+                print("   Brak starych rezultatów")
+            else:
+                print(f"   Usunięto {deleted} folderów/plików z wynikami")
+        
+        if not force:
+            return
+    
     
     print("\n🗑️  Usuwanie starej bazy...")
+    db_file = Path("shop_monitor.db")
+    db_shm = Path("shop_monitor.db-shm")
+    db_wal = Path("shop_monitor.db-wal")
     
     # Usuń pliki bazy
     for f in [db_file, db_shm, db_wal]:
@@ -51,8 +100,8 @@ def reset_database(force: bool = False, seed: bool = True):
         if deleted == 0:
             print("   Brak starych migracji")
 
+   
     print("\n🏗️  Generowanie nowej migracji...")
-
     # Wygeneruj nową migrację z aktualnych modeli
     result = subprocess.run(
         [sys.executable, "-m", "alembic", "revision", "--autogenerate", "-m", "initial_schema"],
@@ -107,5 +156,6 @@ def reset_database(force: bool = False, seed: bool = True):
 if __name__ == "__main__":
     force = "--force" in sys.argv or "-f" in sys.argv
     seed = "--keep-seed" not in sys.argv
+    only_temp = "--only-temp" in sys.argv or force
     
-    reset_database(force=force, seed=seed)
+    reset_database(force=force, seed=seed, only_temp=only_temp)
