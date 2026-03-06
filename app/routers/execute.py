@@ -55,11 +55,30 @@ async def execute_form(request: Request, db: Session = Depends(get_db)):
     })
 
 
+def _resolve_environment(db: Session, environment_id_str: str, custom_url: str):
+    if environment_id_str == "custom":
+        url = custom_url.strip()
+        env_exists = db.query(Environment).filter(Environment.base_url == url).first()
+        if not env_exists:
+            env = Environment(
+                name=f"Ad-hoc: {url[:60]}",
+                base_url=url,
+                type="adhoc",
+                is_active=False,
+            )
+            db.add(env)
+            db.commit()
+            db.refresh(env)
+            return env.id, env
+    return env_exists.id, env_exists
+
+
 @router.post("/execute")
 async def execute_run(
     request: Request,
     suite_id: int = Form(...),
-    environment_id: int = Form(...),
+    environment_id: str = Form(...),
+    custom_url: str = Form(""),
     workers_override: str = Form(""),
     headless: bool = Form(False),
     db: Session = Depends(get_db),
@@ -78,17 +97,21 @@ async def execute_run(
             "max_concurrent": runner_registry.MAX_CONCURRENT_SUITES,
         })
 
-    suite_run_id = await _start_suite(suite_id, environment_id, workers, headless)
+    env_id, _ = _resolve_environment(db, environment_id, custom_url)
+    suite_run_id = await _start_suite(suite_id, env_id, workers, headless)
     return RedirectResponse(url=f"/suite-runs/{suite_run_id}", status_code=303)
 
 
 @router.post("/execute/manual")
 async def execute_manual(
     scenario_ids: List[int] = Form(...),
-    environment_id: int = Form(...),
+    environment_id: str = Form(...),
+    custom_url: str = Form(""),
     headless: bool = Form(False),
+    db: Session = Depends(get_db),
 ):
-    suite_run_id = await _start_manual(scenario_ids, environment_id, headless)
+    env_id, _ = _resolve_environment(db, environment_id, custom_url)
+    suite_run_id = await _start_manual(scenario_ids, env_id, headless)
     return RedirectResponse(url=f"/suite-runs/{suite_run_id}", status_code=303)
 
 

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.environment import Environment
+from app.models.suite_run import SuiteRun
 from app.templates import templates
 
 router = APIRouter(tags=["environments"])
@@ -77,6 +78,12 @@ async def environment_update(
 @router.post("/environments/{env_id}/delete")
 async def environment_delete(env_id: int, db: Session = Depends(get_db)):
     env = _get_or_404(db, env_id)
+    run_count = db.query(SuiteRun).filter_by(environment_id=env_id).count()
+    if run_count:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Nie można usunąć — środowisko ma {run_count} powiązanych run(ów). Usuń je najpierw.",) 
+
     db.delete(env)
     db.commit()
     return RedirectResponse(url="/environments", status_code=303)

@@ -210,14 +210,22 @@
             </div>
 
             <div class="form-group">
-                <label for="environment_id">Environment</label>
-                <select name="environment_id" id="environment_id" required>
+                <label for="suite-env-select">Environment</label>
+                <select name="environment_id" id="suite-env-select" required
+                        onchange="document.getElementById('suite-custom-url').style.display=this.value==='custom'?'block':'none'">
                     {% for env in environments %}
                     <option value="{{ env.id }}" {% if env.id == 1 %}selected{% endif %}>
                         {{ env.name }} — {{ env.base_url }}
                     </option>
                     {% endfor %}
+                    <option value="custom">— Własny URL —</option>
                 </select>
+                <input type="text" name="custom_url" id="suite-custom-url"
+                       placeholder="https://..."
+                       style="display:none; margin-top:0.5rem; width:100%; box-sizing:border-box;
+                              background:var(--bg-dark); border:1px solid var(--border);
+                              color:var(--text-primary); padding:0.6rem 0.75rem;
+                              font-family:'Fira Code',monospace; font-size:12px;">
             </div>
 
             <div class="form-group">
@@ -247,14 +255,22 @@
         <form method="POST" action="/execute/manual" id="manual-form">
 
             <div class="form-group">
-                <label for="manual_environment_id">Environment</label>
-                <select name="environment_id" id="manual_environment_id" required>
+                <label for="manual-env-select">Environment</label>
+                <select name="environment_id" id="manual-env-select" required
+                        onchange="document.getElementById('manual-custom-url').style.display=this.value==='custom'?'block':'none'">
                     {% for env in environments %}
                     <option value="{{ env.id }}" {% if env.id == 1 %}selected{% endif %}>
                         {{ env.name }} — {{ env.base_url }}
                     </option>
                     {% endfor %}
+                    <option value="custom">— Własny URL —</option>
                 </select>
+                <input type="text" name="custom_url" id="manual-custom-url"
+                       placeholder="https://..."
+                       style="display:none; margin-top:0.5rem; width:100%; box-sizing:border-box;
+                              background:var(--bg-dark); border:1px solid var(--border);
+                              color:var(--text-primary); padding:0.6rem 0.75rem;
+                              font-family:'Fira Code',monospace; font-size:12px;">
             </div>
 
             <div class="form-group">
