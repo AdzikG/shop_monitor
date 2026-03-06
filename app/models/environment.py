@@ -1,4 +1,4 @@
-from sqlalchemy import String, Boolean, JSON, DateTime
+from sqlalchemy import String, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, now_utc
 from datetime import datetime
@@ -14,16 +14,14 @@ if TYPE_CHECKING:
 class Environment(Base):
     """
     Srodowisko testowe — PRE, RC, PROD.
-    Przechowuje URL sklepu i dane logowania per srodowisko.
+    Przechowuje URL sklepu i typ srodowiska.
     """
     __tablename__ = "environments"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
     base_url: Mapped[str] = mapped_column(String(500), nullable=False)
-    login: Mapped[str | None] = mapped_column(String(255))
-    password: Mapped[str | None] = mapped_column(String(255))
-    extra_config: Mapped[dict | None] = mapped_column(JSON)
+    type: Mapped[str] = mapped_column(String(50), nullable=False, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 

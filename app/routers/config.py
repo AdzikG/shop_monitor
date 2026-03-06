@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.dictionary import Dictionary
+from app.models.environment import Environment
 from app.models.flag_definition import FlagDefinition
 from app.models.alert_config import AlertConfig
 from app.models.suite import Suite
@@ -16,6 +17,7 @@ router = APIRouter(tags=["config"])
 
 @router.get("/config")
 async def config_hub(request: Request, db: Session = Depends(get_db)):
+    environment_count = db.query(Environment).count()
     dict_count = db.query(Dictionary).count()
     flag_count = db.query(FlagDefinition).count()
     alert_config_count = db.query(AlertConfig).count()
@@ -26,6 +28,7 @@ async def config_hub(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse("config.html", {
         "request": request,
+        "environment_count": environment_count,
         "dict_count": dict_count,
         "flag_count": flag_count,
         "alert_config_count": alert_config_count,

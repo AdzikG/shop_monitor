@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Środowiska — WACEK - Strażnik TERGsasu{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin: 0;">
+        Środowiska
+    </h2>
+    <a href="/environments/new" style="padding: 0.5rem 1rem; background: var(--accent-green); color: var(--bg-dark); text-decoration: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
+        + Nowe środowisko
+    </a>
+</div>
+
+{% if envs %}
+<table>
+    <thead>
+        <tr>
+            <th>#ID</th>
+            <th>Nazwa</th>
+            <th>Typ</th>
+            <th>Base URL</th>
+            <th>Status</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for env in envs %}
+        <tr>
+            <td class="mono">#{{ env.id }}</td>
+            <td>{{ env.name }}</td>
+            <td class="mono" style="font-size: 11px; color: var(--accent-green);">{{ env.type or '—' }}</td>
+            <td class="mono" style="font-size: 11px; color: var(--text-secondary);">{{ env.base_url }}</td>
+            <td>
+                {% if env.is_active %}
+                <span class="status success">aktywne</span>
+                {% else %}
+                <span class="status inactive">nieaktywne</span>
+                {% endif %}
+            </td>
+            <td style="white-space: nowrap;">
+                <a href="/environments/{{ env.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.75rem;">Edytuj</a>
+                <form method="POST" action="/environments/{{ env.id }}/delete" style="display: inline;"
+                      onsubmit="return confirm('Usunąć środowisko {{ env.name }}?');">
+                    <button type="submit" style="background: none; border: none; color: var(--accent-red); font-size: 11px; cursor: pointer; font-family: inherit; padding: 0;">Usuń</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 3rem; text-align: center; color: var(--text-secondary);">
+    Brak środowisk. <a href="/environments/new" class="link">Dodaj pierwsze →</a>
+</div>
+{% endif %}
+{% endblock %}
