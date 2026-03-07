@@ -1,14 +1,19 @@
 import random
-from scenarios.pages.base_page import BasePage
+from scenarios.pages.base_page import BasePage, Sel
 from scenarios.run_data import ProductData
+
 
 # ── ListingPage ───────────────────────────────────────────────────────────────
 
 class ListingPage(BasePage):
-    PRODUCT_NAME  = ('locator', '.product-item .product-name')
-    PRODUCT_PRICE = ('locator', '.product-item .product-price')
-    ADD_TO_CART   = ('role', 'button', {'name': 'Dodaj do koszyka'})
-    GO_TO_CART    = ('role', 'link', {'name': 'Przejdź do koszyka'})
+
+    class Product:
+        NAME  = Sel(desktop=('locator', '.product-item .product-name'))
+        PRICE = Sel(desktop=('locator', '.product-item .product-price'))
+
+    class Actions:
+        BTN_ADD_TO_CART = Sel(desktop=('role', 'button', {'name': 'Dodaj do koszyka'}))
+        BTN_GO_TO_CART  = Sel(desktop=('role', 'link',   {'name': 'Przejdź do koszyka'}))
 
     async def execute(self, instructions: dict) -> ProductData:
         forced = instructions.get('forced_listing_url')
@@ -25,19 +30,19 @@ class ListingPage(BasePage):
         if self.is_desktop:
             await self._hover_before_add()
 
-        name  = await self.get_text(self.PRODUCT_NAME)
-        price = await self.get_decimal(self.PRODUCT_PRICE)
+        name  = await self.get_text(self.Product.NAME)
+        price = await self.get_decimal(self.Product.PRICE)
 
-        await self.loc(self.ADD_TO_CART).click()
+        await self.sloc(self.Actions.BTN_ADD_TO_CART).click()
         await self._after_add_to_cart()
 
         return ProductData(name=name, price=price, url=url, available=True)
 
     async def _hover_before_add(self):
-        # Hook — tylko desktop, np. hover menu
+        # Hook — tylko desktop, np. hover menu przed dodaniem do koszyka
         pass
 
     async def _after_add_to_cart(self):
-        if await self.is_visible(self.GO_TO_CART):
-            await self.loc(self.GO_TO_CART).click()
+        if await self.is_visible(self.Actions.BTN_GO_TO_CART):
+            await self.sloc(self.Actions.BTN_GO_TO_CART).click()
         await self.wait_for_navigation()

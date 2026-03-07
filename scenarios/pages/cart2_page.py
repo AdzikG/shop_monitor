@@ -1,23 +1,34 @@
-from scenarios.pages.base_page import BasePage
+from scenarios.pages.base_page import BasePage, Sel
 from scenarios.run_data import Cart2Data
+
 
 # ── Cart2Page — płatności ─────────────────────────────────────────────────────
 
 class Cart2Page(BasePage):
-    PAYMENT_OPTION = ('locator', '.payment-option')
-    PAYMENT_NAME   = ('locator', '.payment-option .name')
-    PAYMENT_PRICE  = ('locator', '.payment-option .price')
-    BTN_NEXT       = ('role', 'button', {'name': 'Dalej'})
+
+    # ── Opcje płatności ───────────────────────────────────────────────────────
+
+    class Payment:
+        OPTION = Sel(desktop=('locator', '.payment-option'))
+        NAME   = Sel(desktop=('locator', '.payment-option .name'))
+        PRICE  = Sel(desktop=('locator', '.payment-option .price'))
+
+    # ── Nawigacja ─────────────────────────────────────────────────────────────
+
+    class Nav:
+        BTN_NEXT = Sel(desktop=('role', 'button', {'name': 'Dalej'}))
+
+    # ── Główna logika ─────────────────────────────────────────────────────────
 
     async def execute(self, instructions: dict) -> Cart2Data:
         await self.wait_for_navigation()
 
         available = await self._get_available_options()
         selected  = await self._select_payment()
-        price     = await self.get_decimal(self.PAYMENT_PRICE)
+        price     = await self.get_decimal(self.Payment.PRICE)
 
         if self.context.is_order and selected:
-            await self.loc(self.BTN_NEXT).click()
+            await self.sloc(self.Nav.BTN_NEXT).click()
             await self.wait_for_navigation()
 
         return Cart2Data(
@@ -26,9 +37,11 @@ class Cart2Page(BasePage):
             price=price,
         )
 
+    # ── Sekcja: płatność ──────────────────────────────────────────────────────
+
     async def _get_available_options(self) -> list[str]:
         names = []
-        for el in await self.loc(self.PAYMENT_NAME).all():
+        for el in await self.sloc(self.Payment.NAME).all():
             names.append((await el.inner_text()).strip())
         return names
 

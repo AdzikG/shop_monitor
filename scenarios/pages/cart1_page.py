@@ -1,16 +1,31 @@
-from scenarios.pages.base_page import BasePage
+from scenarios.pages.base_page import BasePage, Sel
 from scenarios.run_data import Cart1Data
 
-# ── Cart1Page — transporty ────────────────────────────────────────────────────
+
+# ── Cart1Page — dostawa ───────────────────────────────────────────────────────
 
 class Cart1Page(BasePage):
-    DELIVERY_OPTION  = ('locator', '.delivery-option')
-    DELIVERY_NAME    = ('locator', '.delivery-option .name')
-    DELIVERY_DATE    = ('locator', '.delivery-option .estimated-date')
-    DELIVERY_CUTOFF  = ('locator', '.delivery-option .cutoff-time')
-    DELIVERY_PRICE   = ('locator', '.delivery-option .price')
-    POSTAL_CODE_FIELD = ('placeholder', 'Kod pocztowy')
-    BTN_NEXT         = ('role', 'button', {'name': 'Dalej'})
+
+    # ── Opcje dostawy ─────────────────────────────────────────────────────────
+
+    class Delivery:
+        OPTION         = Sel(desktop=('locator', '.delivery-option'))
+        NAME           = Sel(desktop=('locator', '.delivery-option .name'))
+        ESTIMATED_DATE = Sel(desktop=('locator', '.delivery-option .estimated-date'))
+        CUTOFF_TIME    = Sel(desktop=('locator', '.delivery-option .cutoff-time'))
+        PRICE          = Sel(desktop=('locator', '.delivery-option .price'))
+
+    # ── Adres / kod pocztowy ──────────────────────────────────────────────────
+
+    class Address:
+        FIELD_POSTAL = Sel(desktop=('placeholder', 'Kod pocztowy'))
+
+    # ── Nawigacja ─────────────────────────────────────────────────────────────
+
+    class Nav:
+        BTN_NEXT = Sel(desktop=('role', 'button', {'name': 'Dalej'}))
+
+    # ── Główna logika ─────────────────────────────────────────────────────────
 
     async def execute(self, instructions: dict) -> Cart1Data:
         await self.wait_for_navigation()
@@ -29,12 +44,12 @@ class Cart1Page(BasePage):
             postal_code_required, postal_code_filled = await self._handle_post_selection()
 
         # Faza 4 — zbierz dane po wszystkich akcjach
-        date   = await self.get_text(self.DELIVERY_DATE)
-        cutoff = await self.get_text(self.DELIVERY_CUTOFF)
-        price  = await self.get_decimal(self.DELIVERY_PRICE)
+        date   = await self.get_text(self.Delivery.ESTIMATED_DATE)
+        cutoff = await self.get_text(self.Delivery.CUTOFF_TIME)
+        price  = await self.get_decimal(self.Delivery.PRICE)
 
         if self.context.is_order and selected:
-            await self.loc(self.BTN_NEXT).click()
+            await self.sloc(self.Nav.BTN_NEXT).click()
             await self.wait_for_navigation()
 
         return Cart1Data(
@@ -47,36 +62,11 @@ class Cart1Page(BasePage):
             postal_code_filled=postal_code_filled,
         )
 
-    async def _handle_post_selection(self) -> tuple[bool, bool]:
-        """
-        Reaguje na to co pojawiło się po wyborze dostawy.
-        Page sam ocenia sytuację na podstawie tego co widzi.
-        Zwraca: (postal_code_required, postal_code_filled)
-        """
-        postal_code_required = await self.is_visible(self.POSTAL_CODE_FIELD)
-        postal_code_filled = False
-
-        if postal_code_required:
-            if self.context.postal_code:
-                self.log(f"Pole kodu pocztowego widoczne — wpisuję {self.context.postal_code}")
-                await self.safe_fill(self.POSTAL_CODE_FIELD, self.context.postal_code)
-                await self.wait_for_navigation()
-                postal_code_filled = True
-            else:
-                self.log("Pole kodu pocztowego widoczne — brak kodu w context")
-
-        if self.is_desktop:
-            await self._handle_desktop_post_selection()
-
-        return postal_code_required, postal_code_filled
-
-    async def _handle_desktop_post_selection(self):
-        # Hook — np. popup z potwierdzeniem na desktop
-        pass
+    # ── Sekcja: dostawa ───────────────────────────────────────────────────────
 
     async def _get_available_options(self) -> list[str]:
         names = []
-        for el in await self.loc(self.DELIVERY_NAME).all():
+        for el in await self.sloc(self.Delivery.NAME).all():
             names.append((await el.inner_text()).strip())
         return names
 
@@ -90,3 +80,31 @@ class Cart1Page(BasePage):
             await option.first.click()
             return self.context.delivery_name
         return None
+
+    # ── Sekcja: post-wybór ────────────────────────────────────────────────────
+
+    async def _handle_post_selection(self) -> tuple[bool, bool]:
+        """
+        Reaguje na to co pojawiło się po wyborze dostawy.
+        Zwraca: (postal_code_required, postal_code_filled)
+        """
+        postal_code_required = await self.is_visible(self.Address.FIELD_POSTAL)
+        postal_code_filled = False
+
+        if postal_code_required:
+            if self.context.postal_code:
+                self.log(f"Pole kodu pocztowego widoczne — wpisuję {self.context.postal_code}")
+                await self.safe_fill(self.Address.FIELD_POSTAL, self.context.postal_code)
+                await self.wait_for_navigation()
+                postal_code_filled = True
+            else:
+                self.log("Pole kodu pocztowego widoczne — brak kodu w context")
+
+        if self.is_desktop:
+            await self._handle_desktop_post_selection()
+
+        return postal_code_required, postal_code_filled
+
+    async def _handle_desktop_post_selection(self):
+        # Hook — np. popup z potwierdzeniem na desktop
+        pass

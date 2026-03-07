@@ -1,9 +1,33 @@
+from dataclasses import dataclass
 from playwright.async_api import Page
 from scenarios.context import ScenarioContext
 import logging
 import re
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Sel:
+    """
+    Selektor strony z opcjonalnym wariantem mobilnym.
+
+    Użycie:
+        BTN_NEXT = Sel(
+            desktop=('role', 'button', {'name': 'Dalej'}),
+            mobile= ('locator', '.btn-next-mobile'),   # opcjonalne
+        )
+        await self.sloc(self.Nav.BTN_NEXT).click()
+
+    Jeśli mobile=None — oba tryby używają desktop.
+    """
+    desktop: tuple
+    mobile: tuple | None = None
+
+    def resolve(self, is_mobile: bool) -> tuple:
+        if is_mobile and self.mobile:
+            return self.mobile
+        return self.desktop
 
 
 class BasePage:
@@ -43,6 +67,10 @@ class BasePage:
             return self.page.get_by_placeholder(selector[1])
         else:
             raise ValueError(f"Nieznany typ selektora: {kind}")
+
+    def sloc(self, sel: Sel):
+        """Wybiera wariant desktop/mobile z Sel i zwraca Playwright Locator."""
+        return self.loc(sel.resolve(self.is_mobile))
 
     # ── Desktop / mobile ──────────────────────────────────────────────────────
 

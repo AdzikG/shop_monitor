@@ -3,13 +3,16 @@ Page objects dla wszystkich etapów.
 Każdy page dostaje (page, context, instructions) gdzie instructions
 to dict produkowany przez rules poprzedniego etapu.
 """
-from scenarios.pages.base_page import BasePage
+from scenarios.pages.base_page import BasePage, Sel
 from scenarios.run_data import HomeData
+
 
 # ── HomePage ──────────────────────────────────────────────────────────────────
 
 class HomePage(BasePage):
-    COOKIE_ACCEPT = ('role', 'button', {'name': 'Akceptuję'})
+
+    class Cookies:
+        BTN_ACCEPT = Sel(desktop=('role', 'button', {'name': 'Akceptuję'}))
 
     async def execute(self, instructions: dict) -> HomeData:
         await self.page.goto(self.context.environment_url)
@@ -22,9 +25,9 @@ class HomePage(BasePage):
         return HomeData(loaded=True)
 
     async def _accept_cookies(self):
-        if await self.is_visible(self.COOKIE_ACCEPT):
-            await self.loc(self.COOKIE_ACCEPT).click()
+        if await self.is_visible(self.Cookies.BTN_ACCEPT):
+            await self.sloc(self.Cookies.BTN_ACCEPT).click()
 
     async def _close_app_banner(self):
-        # Hook — nadpisz w MobileHomePage jeśli masz banner
+        # Hook — nadpisz jeśli sklep pokazuje banner aplikacji mobilnej
         pass
