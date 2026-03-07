@@ -247,6 +247,12 @@
             </div>
 
             <div class="form-group">
+                <label for="suite_retries">Retries</label>
+                <input type="number" name="retries" id="suite_retries"
+                       min="0" max="5" value="0">
+            </div>
+
+            <div class="form-group">
                 <label for="suite_id">Suite</label>
                 <select name="suite_id" id="suite_id" required>
                     <option value="">Wybierz suite...</option>
@@ -299,6 +305,12 @@
                 <label for="workers_override">Workers</label>
                 <input type="number" name="workers_override" id="workers_override"
                        min="1" max="10" placeholder="Domyślnie 2">
+            </div>
+
+            <div class="form-group">
+                <label for="manual_retries">Retries</label>
+                <input type="number" name="retries" id="manual_retries"
+                       min="0" max="5" value="0">
             </div>
 
             <div class="form-group">

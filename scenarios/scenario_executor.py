@@ -35,6 +35,7 @@ class ScenarioExecutor:
         suite_id: int,
         db: Session,
         headless: bool = True,
+        max_retries: int = 0,
     ):
         self.scenario_db = scenario_db
         self.environment_db = environment_db
@@ -42,6 +43,7 @@ class ScenarioExecutor:
         self.suite_id = suite_id
         self.db = db
         self.headless = headless
+        self.max_retries = max_retries
         self.scenario_run = None
         self.alert_engine = None
 
@@ -127,7 +129,7 @@ class ScenarioExecutor:
                     }
                     for e in self.db.query(ApiErrorExclusion).all()
                 ]
-                runner = ShopRunner(page=page, context=context, screenshot_dir=screenshot_dir, api_error_exclusions=exclusions)
+                runner = ShopRunner(page=page, context=context, screenshot_dir=screenshot_dir, api_error_exclusions=exclusions, max_retries=self.max_retries)
                 result = await runner.run()
 
                 self._save_run_data(result)

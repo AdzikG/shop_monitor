@@ -11,7 +11,8 @@ class ListingPage(BasePage):
     GO_TO_CART    = ('role', 'link', {'name': 'Przejdź do koszyka'})
 
     async def execute(self, instructions: dict) -> ProductData:
-        url = random.choice(self.context.listing_urls)
+        forced = instructions.get('forced_listing_url')
+        url = forced if forced else random.choice(self.context.listing_urls)
 
         # Jeśli URL jest relatywny — złącz z base URL środowiska
         if not url.startswith('http'):

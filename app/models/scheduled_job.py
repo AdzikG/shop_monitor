@@ -23,6 +23,7 @@ class ScheduledJob(Base):
     suite_id: Mapped[int] = mapped_column(ForeignKey("suites.id"), nullable=False)
     environment_id: Mapped[int] = mapped_column(ForeignKey("environments.id"), nullable=False)
     workers: Mapped[int] = mapped_column(Integer, default=2)
+    max_retries: Mapped[int] = mapped_column(Integer, default=0)
 
     # Harmonogram
     cron: Mapped[str] = mapped_column(String(100), nullable=False)

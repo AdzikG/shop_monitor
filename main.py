@@ -52,11 +52,12 @@ def parse_args():
     environment_id = None
     workers = None
     headless = "--headless" in sys.argv
+    retries = 0
 
     if "--suite" in sys.argv:
         idx = sys.argv.index("--suite")
         suite_id = int(sys.argv[idx + 1])
-    
+
     if "--scenario" in sys.argv:
         idx = sys.argv.index("--scenario")
         scenario_id = int(sys.argv[idx + 1])
@@ -69,7 +70,11 @@ def parse_args():
         idx = sys.argv.index("--workers")
         workers = int(sys.argv[idx + 1])
 
-    return suite_id, scenario_id, environment_id, workers, headless
+    if "--retries" in sys.argv:
+        idx = sys.argv.index("--retries")
+        retries = int(sys.argv[idx + 1])
+
+    return suite_id, scenario_id, environment_id, workers, headless, retries
 
 
 def load_from_db(db: Session, suite_id: int | None, scenario_id: int | None, environment_id: int | None):
@@ -185,11 +190,11 @@ async def run_single_scenario(scenario, suite, environment, headless: bool):
         db.close()
 
 
-async def run_suite(suite, environment, scenarios, workers: int, headless: bool):
+async def run_suite(suite, environment, scenarios, workers: int, headless: bool, max_retries: int = 0):
     """Uruchamia pelna suite przez SuiteExecutor."""
-    
+
     from scenarios.suite_executor import SuiteExecutor
-    
+
     db = SessionLocal()
     try:
         executor = SuiteExecutor(
@@ -198,7 +203,8 @@ async def run_suite(suite, environment, scenarios, workers: int, headless: bool)
             scenarios=scenarios,
             workers=workers,
             headless=headless,
-            db=db
+            db=db,
+            max_retries=max_retries,
         )
         await executor.run()
     finally:
@@ -206,18 +212,18 @@ async def run_suite(suite, environment, scenarios, workers: int, headless: bool)
 
 
 if __name__ == "__main__":
-    suite_id, scenario_id, environment_id, workers_override, headless = parse_args()
+    suite_id, scenario_id, environment_id, workers_override, headless, retries = parse_args()
 
     db = SessionLocal()
     try:
         suite, environment, scenarios = load_from_db(db, suite_id, scenario_id, environment_id)
     finally:
         db.close()
-    
+
     # Pojedynczy scenariusz — prostsza logika
     if scenario_id:
         asyncio.run(run_single_scenario(scenarios[0], suite, environment, headless))
     # Cala suite — SuiteExecutor
     else:
         workers = workers_override or suite.workers
-        asyncio.run(run_suite(suite, environment, scenarios, workers, headless))
+        asyncio.run(run_suite(suite, environment, scenarios, workers, headless, retries))

@@ -54,7 +54,7 @@ class StopTest(Exception):
 
 
 class ShopRunner:
-    def __init__(self, page: Page, context: ScenarioContext, screenshot_dir: str | None = None, api_error_exclusions: list[dict] | None = None):
+    def __init__(self, page: Page, context: ScenarioContext, screenshot_dir: str | None = None, api_error_exclusions: list[dict] | None = None, max_retries: int = 0):
         self.page = page
         self.context = context
         self.run_data = RunData()
@@ -66,6 +66,7 @@ class ShopRunner:
         self.screenshots: dict[str, str] = {}
         self.api_errors: list[dict] = []
         self._api_exclusions = api_error_exclusions or []
+        self.max_retries = max_retries
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -82,6 +83,13 @@ class ShopRunner:
                 continue
             return True
         return False
+
+    async def _clear_browser_state(self) -> None:
+        await self.page.context.clear_cookies()
+        try:
+            await self.page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
+        except Exception:
+            pass  # page may be in a broken state after the exception
 
     async def _screenshot(self, stage: str) -> None:
         if not self.screenshot_dir:
@@ -113,59 +121,86 @@ class ShopRunner:
 
         self.page.on('response', _on_response)
 
-        try:
-            await self._run_home()
-            await self._run_listing()
-            await self._run_cart0()
+        forced_listing_url: str | None = None
 
-            if self.context.is_order:
-                await self._run_cart1()
-                await self._run_cart2()
-                await self._run_cart3()
-                await self._run_cart4()
-
-            # Global rules — mają dostęp do danych ze wszystkich etapów
-            global_result = GlobalRules(self.context).check(self.run_data)
-            self._process_result(global_result, 'global')
-
-        except StopTest as e:
-            if e.expected:
+        for attempt in range(self.max_retries + 1):
+            if attempt > 0:
+                self.run_data = RunData()
+                self.alerts = []
+                self._current_stage = 'init'
+                self.screenshots = {}
+                self.api_errors = []
+                await self._clear_browser_state()
+                if forced_listing_url:
+                    self.instructions['forced_listing_url'] = forced_listing_url
                 logger.info(
                     f"[{self.context.scenario_name}] "
-                    f"Test zatrzymany na '{e.stage}': {e.reason}"
+                    f"Retry {attempt}/{self.max_retries}"
                 )
-            else:
-                logger.warning(
+
+            try:
+                await self._run_home()
+                await self._run_listing()
+                await self._run_cart0()
+
+                if self.context.is_order:
+                    await self._run_cart1()
+                    await self._run_cart2()
+                    await self._run_cart3()
+                    await self._run_cart4()
+
+                # Global rules — mają dostęp do danych ze wszystkich etapów
+                global_result = GlobalRules(self.context).check(self.run_data)
+                self._process_result(global_result, 'global')
+
+            except StopTest as e:
+                if e.expected:
+                    logger.info(
+                        f"[{self.context.scenario_name}] "
+                        f"Test zatrzymany na '{e.stage}': {e.reason}"
+                    )
+                else:
+                    logger.warning(
+                        f"[{self.context.scenario_name}] "
+                        f"Test przerwany na '{e.stage}' (nieoczekiwane): {e.reason}"
+                    )
+                return ShopRunResult(
+                    run_data=self.run_data,
+                    alerts=self.alerts,
+                    stopped_at=e.stage,
+                    success=e.expected,
+                    screenshots=self.screenshots,
+                    api_errors=self.api_errors,
+                )
+
+            except Exception as e:
+                logger.exception(
                     f"[{self.context.scenario_name}] "
-                    f"Test przerwany na '{e.stage}' (nieoczekiwane): {e.reason}"
+                    f"Nieoczekiwany błąd (próba {attempt + 1}): {e}"
                 )
-            return ShopRunResult(
-                run_data=self.run_data,
-                alerts=self.alerts,
-                stopped_at=e.stage,
-                success=e.expected,
-                screenshots=self.screenshots,
-                api_errors=self.api_errors,
-            )
+                if attempt < self.max_retries:
+                    forced_listing_url = (
+                        self.run_data.listing.url
+                        if self.run_data.listing else None
+                    )
+                    continue
+                return ShopRunResult(
+                    run_data=self.run_data,
+                    alerts=self.alerts,
+                    stopped_at=self._current_stage,
+                    success=False,
+                    screenshots=self.screenshots,
+                    api_errors=self.api_errors,
+                )
 
-        except Exception as e:
-            logger.exception(f"[{self.context.scenario_name}] Nieoczekiwany błąd: {e}")
-            return ShopRunResult(
-                run_data=self.run_data,
-                alerts=self.alerts,
-                stopped_at=self._current_stage,
-                success=False,
-                screenshots=self.screenshots,
-                api_errors=self.api_errors,
-            )
-
-        return ShopRunResult(
-            run_data=self.run_data,
-            alerts=self.alerts,
-            success=True,
-            screenshots=self.screenshots,
-            api_errors=self.api_errors,
-        )
+            else:
+                return ShopRunResult(
+                    run_data=self.run_data,
+                    alerts=self.alerts,
+                    success=True,
+                    screenshots=self.screenshots,
+                    api_errors=self.api_errors,
+                )
 
     # ── Etapy ─────────────────────────────────────────────────────────────────
 

@@ -117,6 +117,7 @@ async def execute_run(
     custom_url: str = Form(""),
     workers_override: str = Form(""),
     headless: bool = Form(False),
+    retries: int = Form(0),
     db: Session = Depends(get_db),
 ):
     workers = int(workers_override) if workers_override.strip() else None
@@ -134,7 +135,7 @@ async def execute_run(
         })
 
     env_id, _ = _resolve_environment(db, environment_id, custom_url)
-    suite_run_id = await _start_suite(suite_id, env_id, workers, headless)
+    suite_run_id = await _start_suite(suite_id, env_id, workers, headless, max_retries=retries)
     return RedirectResponse(url=f"/suite-runs/{suite_run_id}", status_code=303)
 
 
@@ -146,6 +147,7 @@ async def execute_manual(
     custom_url: str = Form(""),
     workers_override: str = Form(""),
     headless: bool = Form(False),
+    retries: int = Form(0),
     db: Session = Depends(get_db),
 ):
     workers = int(workers_override) if workers_override.strip() else None
@@ -156,7 +158,7 @@ async def execute_manual(
         count = max(1, min(int(form.get(f"count_{sid}") or 1), 20))
         expanded_ids.extend([sid] * count)
     env_id, _ = _resolve_environment(db, environment_id, custom_url)
-    suite_run_id = await _start_manual(expanded_ids, env_id, workers, headless)
+    suite_run_id = await _start_manual(expanded_ids, env_id, workers, headless, max_retries=retries)
     return RedirectResponse(url=f"/suite-runs/{suite_run_id}", status_code=303)
 
 
@@ -168,6 +170,7 @@ async def _start_suite(
     workers_override,
     headless: bool,
     triggered_by: str = "manual",
+    max_retries: int = 0,
 ) -> int:
     """
     Tworzy suite_run w bazie, rejestruje task i zwraca suite_run_id.
@@ -213,7 +216,7 @@ async def _start_suite(
     # Uruchom w tle przez registry
     await runner_registry.run_suite(
         suite_run_id,
-        _run_suite_background(suite_run_id, suite_id, environment_id, workers, headless),
+        _run_suite_background(suite_run_id, suite_id, environment_id, workers, headless, max_retries),
     )
 
     return suite_run_id
@@ -224,6 +227,7 @@ async def _start_manual(
     environment_id: int,
     workers_override,
     headless: bool,
+    max_retries: int = 0,
 ) -> int:
     db = SessionLocal()
     try:
@@ -261,7 +265,7 @@ async def _start_manual(
 
     await runner_registry.run_suite(
         suite_run_id,
-        _run_manual_background(suite_run_id, scenario_ids, environment_id, workers, headless),
+        _run_manual_background(suite_run_id, scenario_ids, environment_id, workers, headless, max_retries),
     )
 
     return suite_run_id
@@ -275,6 +279,7 @@ async def _run_suite_background(
     environment_id: int,
     workers: int,
     headless: bool,
+    max_retries: int = 0,
 ):
     db = SessionLocal()
     try:
@@ -297,7 +302,8 @@ async def _run_suite_background(
             workers=workers,
             headless=headless,
             db=db,
-            suite_run=suite_run, 
+            suite_run=suite_run,
+            max_retries=max_retries,
         )
         await executor.run()
 
@@ -315,6 +321,7 @@ async def _run_manual_background(
     environment_id: int,
     workers: int,
     headless: bool,
+    max_retries: int = 0,
 ):
     db = SessionLocal()
     try:
@@ -337,6 +344,7 @@ async def _run_manual_background(
             headless=headless,
             db=db,
             suite_run=suite_run,
+            max_retries=max_retries,
         )
         await executor.run()
 

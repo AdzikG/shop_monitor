@@ -63,6 +63,7 @@ async def tick():
                     workers_override=job.workers,
                     headless=True,
                     triggered_by="scheduler",
+                    max_retries=job.max_retries,
                 )
                 job.last_run_at = now
                 job.last_suite_run_id = suite_run_id

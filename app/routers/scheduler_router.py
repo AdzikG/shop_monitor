@@ -36,6 +36,7 @@ async def scheduler_create(
     environment_id: int = Form(...),
     workers: int = Form(...),
     cron: str = Form(...),
+    retries: int = Form(0),
     db: Session = Depends(get_db),
 ):
     next_run = compute_next_run(cron)
@@ -46,6 +47,7 @@ async def scheduler_create(
         suite_id=suite_id,
         environment_id=environment_id,
         workers=workers,
+        max_retries=retries,
         cron=cron,
         is_enabled=True,
         next_run_at=next_run,
@@ -99,6 +101,7 @@ async def scheduler_run_now(job_id: int, db: Session = Depends(get_db)):
             workers_override=job.workers,
             headless=True,
             triggered_by="scheduler",
+            max_retries=job.max_retries,
         )
         job.last_run_at = datetime.now(timezone.utc)
         job.last_suite_run_id = suite_run_id
