@@ -4,6 +4,7 @@ Tick odpala się co minutę i sprawdza które joby są do uruchomienia.
 """
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -13,7 +14,19 @@ from database import SessionLocal
 from app.models.scheduled_job import ScheduledJob
 from core import runner_registry
 
+Path("logs").mkdir(exist_ok=True)
+
+_scheduler_log = f"logs/scheduler_{datetime.now().strftime('%Y-%m-%d')}.log"
+_handler = logging.FileHandler(_scheduler_log, encoding="utf-8")
+_handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)-8s | %(message)s", datefmt="%H:%M:%S"))
+
 logger = logging.getLogger(__name__)
+logger.propagate = False
+logger.addHandler(_handler)
+
+_apscheduler_logger = logging.getLogger("apscheduler")
+_apscheduler_logger.propagate = False
+_apscheduler_logger.addHandler(_handler)
 
 scheduler = AsyncIOScheduler(timezone="UTC")
 
