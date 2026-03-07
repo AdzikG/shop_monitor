@@ -103,6 +103,26 @@ class ScenarioExecutor:
 
         return self.scenario_run
 
+    def _load_exclusions(self) -> list[dict]:
+        """Wczytuje z bazy wzorce wykluczeń błędów API."""
+        return [
+            {
+                'endpoint_pattern':      e.endpoint_pattern,
+                'status_code':           e.status_code,
+                'response_body_pattern': e.response_body_pattern,
+            }
+            for e in self.db.query(ApiErrorExclusion).all()
+        ]
+
+    def _register_alerts(self, result: ShopRunResult) -> None:
+        """Przekazuje alerty z wyniku runnera do AlertEngine."""
+        for alert in result.alerts:
+            self.alert_engine.add_alert(
+                business_rule=alert.business_rule,
+                description=alert.description,
+                alert_type=alert.alert_type,
+            )
+
     async def _execute(self, context: ScenarioContext):
         """Uruchamia Playwright i przekazuje sterowanie do ShopRunner."""
 
@@ -121,25 +141,17 @@ class ScenarioExecutor:
                 screenshot_dir = f"screenshots/{self.suite_run_id}/{self.scenario_run.id}"
                 Path(screenshot_dir).mkdir(parents=True, exist_ok=True)
 
-                exclusions = [
-                    {
-                        'endpoint_pattern':      e.endpoint_pattern,
-                        'status_code':           e.status_code,
-                        'response_body_pattern': e.response_body_pattern,
-                    }
-                    for e in self.db.query(ApiErrorExclusion).all()
-                ]
-                runner = ShopRunner(page=page, context=context, screenshot_dir=screenshot_dir, api_error_exclusions=exclusions, max_retries=self.max_retries)
+                runner = ShopRunner(
+                    page=page,
+                    context=context,
+                    screenshot_dir=screenshot_dir,
+                    api_error_exclusions=self._load_exclusions(),
+                    max_retries=self.max_retries,
+                )
                 result = await runner.run()
 
                 self._save_run_data(result)
-
-                for alert in result.alerts:
-                    self.alert_engine.add_alert(
-                        business_rule=alert.business_rule,
-                        description=alert.description,
-                        alert_type=alert.alert_type,
-                    )
+                self._register_alerts(result)
 
                 if result.stopped_at:
                     logger.info(
@@ -221,6 +233,10 @@ class ScenarioExecutor:
         if snapshots:
             self.db.add_all(snapshots)
 
+        self._save_api_errors(result)
+
+    def _save_api_errors(self, result: ShopRunResult) -> None:
+        """Zapisuje błędy API z przebiegu do bazy (body obcięte do 250 znaków)."""
         for err in result.api_errors:
             body = err.get('response_body')
             if body and len(body) > 250:

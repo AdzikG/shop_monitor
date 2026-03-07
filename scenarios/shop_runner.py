@@ -85,11 +85,38 @@ class ShopRunner:
         return False
 
     async def _clear_browser_state(self) -> None:
+        """Czyści ciasteczka oraz localStorage/sessionStorage przed kolejną próbą."""
         await self.page.context.clear_cookies()
         try:
             await self.page.evaluate("() => { localStorage.clear(); sessionStorage.clear(); }")
         except Exception:
-            pass  # page may be in a broken state after the exception
+            pass  # strona może być w uszkodzonym stanie po wyjątku
+
+    async def _reset_for_retry(self, attempt: int, forced_listing_url: str | None) -> None:
+        """Resetuje stan runnera i przeglądarki przed kolejną próbą testu."""
+        self.run_data = RunData()
+        self.alerts = []
+        self._current_stage = 'init'
+        self.screenshots = {}
+        self.api_errors = []
+        await self._clear_browser_state()
+        if forced_listing_url:
+            self.instructions['forced_listing_url'] = forced_listing_url
+        logger.info(
+            f"[{self.context.scenario_name}] "
+            f"Retry {attempt}/{self.max_retries}"
+        )
+
+    def _make_result(self, success: bool, stopped_at: str | None = None) -> ShopRunResult:
+        """Buduje ShopRunResult z aktualnego stanu runnera."""
+        return ShopRunResult(
+            run_data=self.run_data,
+            alerts=self.alerts,
+            stopped_at=stopped_at,
+            success=success,
+            screenshots=self.screenshots,
+            api_errors=self.api_errors,
+        )
 
     async def _screenshot(self, stage: str) -> None:
         if not self.screenshot_dir:
@@ -125,18 +152,7 @@ class ShopRunner:
 
         for attempt in range(self.max_retries + 1):
             if attempt > 0:
-                self.run_data = RunData()
-                self.alerts = []
-                self._current_stage = 'init'
-                self.screenshots = {}
-                self.api_errors = []
-                await self._clear_browser_state()
-                if forced_listing_url:
-                    self.instructions['forced_listing_url'] = forced_listing_url
-                logger.info(
-                    f"[{self.context.scenario_name}] "
-                    f"Retry {attempt}/{self.max_retries}"
-                )
+                await self._reset_for_retry(attempt, forced_listing_url)
 
             try:
                 await self._run_home()
@@ -154,24 +170,12 @@ class ShopRunner:
                 self._process_result(global_result, 'global')
 
             except StopTest as e:
-                if e.expected:
-                    logger.info(
-                        f"[{self.context.scenario_name}] "
-                        f"Test zatrzymany na '{e.stage}': {e.reason}"
-                    )
-                else:
-                    logger.warning(
-                        f"[{self.context.scenario_name}] "
-                        f"Test przerwany na '{e.stage}' (nieoczekiwane): {e.reason}"
-                    )
-                return ShopRunResult(
-                    run_data=self.run_data,
-                    alerts=self.alerts,
-                    stopped_at=e.stage,
-                    success=e.expected,
-                    screenshots=self.screenshots,
-                    api_errors=self.api_errors,
+                level = logger.info if e.expected else logger.warning
+                level(
+                    f"[{self.context.scenario_name}] "
+                    f"Test {'zatrzymany' if e.expected else 'przerwany'} na '{e.stage}': {e.reason}"
                 )
+                return self._make_result(success=e.expected, stopped_at=e.stage)
 
             except Exception as e:
                 logger.exception(
@@ -184,23 +188,10 @@ class ShopRunner:
                         if self.run_data.listing else None
                     )
                     continue
-                return ShopRunResult(
-                    run_data=self.run_data,
-                    alerts=self.alerts,
-                    stopped_at=self._current_stage,
-                    success=False,
-                    screenshots=self.screenshots,
-                    api_errors=self.api_errors,
-                )
+                return self._make_result(success=False, stopped_at=self._current_stage)
 
             else:
-                return ShopRunResult(
-                    run_data=self.run_data,
-                    alerts=self.alerts,
-                    success=True,
-                    screenshots=self.screenshots,
-                    api_errors=self.api_errors,
-                )
+                return self._make_result(success=True)
 
     # ── Etapy ─────────────────────────────────────────────────────────────────
 
