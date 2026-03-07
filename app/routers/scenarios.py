@@ -9,6 +9,7 @@ from app.models.suite_scenario import SuiteScenario
 from app.models.run import ScenarioRun
 from app.models.dictionary import Dictionary
 from app.models.flag_definition import FlagDefinition, ScenarioFlag
+from app.models.alert import Alert
 from app.templates import templates
 
 router = APIRouter(tags=["scenarios"])
@@ -230,7 +231,7 @@ async def scenario_update(scenario_id: int, request: Request, db: Session = Depe
 # ── COPY ──────────────────────────────────────────────────────────────────────
 
 @router.post("/scenarios/{scenario_id}/copy")
-async def scenario_copy(scenario_id: int, db: Session = Depends(get_db)):
+async def scenario_copy(request: Request, scenario_id: int, db: Session = Depends(get_db)):
     original = _get_or_404(db, scenario_id)
     copy = Scenario(
         name=f"{original.name} (kopia)",
@@ -251,7 +252,14 @@ async def scenario_copy(scenario_id: int, db: Session = Depends(get_db)):
     for sf in original.flags:
         db.add(ScenarioFlag(scenario_id=copy.id, flag_id=sf.flag_id, is_enabled=sf.is_enabled))
     db.commit()
-    return RedirectResponse(url=f"/scenarios/{copy.id}/edit", status_code=303)
+
+    # Sprawdzenie skąd przyszło żądanie
+    referer = request.headers.get("referer")
+    
+    if referer and f"/scenarios/{scenario_id}" in referer:
+        return RedirectResponse(url=f"/scenarios/{copy.id}/edit", status_code=303)
+    
+    return RedirectResponse(url=f"/scenarios", status_code=303)
 
 
 # ── DELETE ────────────────────────────────────────────────────────────────────
@@ -260,6 +268,8 @@ async def scenario_copy(scenario_id: int, db: Session = Depends(get_db)):
 async def scenario_delete(scenario_id: int, db: Session = Depends(get_db)):
     scenario = _get_or_404(db, scenario_id)
     db.query(SuiteScenario).filter_by(scenario_id=scenario_id).delete()
+    db.query(ScenarioRun).filter_by(scenario_id=scenario_id).delete()
+    db.query(Alert).filter_by(scenario_id=scenario_id).delete()
     db.delete(scenario)
     db.commit()
     return RedirectResponse(url="/scenarios", status_code=303)
