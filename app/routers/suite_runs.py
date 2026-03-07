@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 import json
@@ -11,6 +11,7 @@ from database import get_db
 from app.models.suite_run import SuiteRun, SuiteRunStatus
 from app.models.run import ScenarioRun, RunStatus
 from app.models.alert import Alert
+from app.models.alert_group import AlertGroup
 from app.models.basket_snapshot import BasketSnapshot
 from app.models.api_error import ApiError
 from app.templates import templates
@@ -141,7 +142,23 @@ async def cancel_suite_run(suite_run_id: int, db: Session = Depends(get_db)):
             scenario.finished_at = datetime.now(timezone.utc)
         db.commit()
 
-    return JSONResponse({"ok": cancelled, "suite_run_id": suite_run_id})
+    return JSONResponse({"ok": cancelled, "suite_run_id": suite_run_id}) 
+
+
+@router.post("/suite-runs/{suite_run_id}/delete")
+async def delete_suite_run(suite_run_id: int, db: Session = Depends(get_db)):
+    suite_run = db.query(SuiteRun).filter(SuiteRun.id == suite_run_id).first()
+    if not suite_run:
+        raise HTTPException(status_code=404, detail="Suite run not found")
+
+    if runner_registry.is_running(suite_run_id):
+        raise HTTPException(status_code=400, detail="Nie można usunąć uruchomionego runu")
+
+    db.query(AlertGroup).filter(AlertGroup.last_suite_run_id == suite_run_id).delete()
+    db.delete(suite_run)
+    db.commit()
+
+    return RedirectResponse(url="/suite-runs", status_code=303)
 
 
 @router.get("/suite-runs/{suite_run_id}/{id}")

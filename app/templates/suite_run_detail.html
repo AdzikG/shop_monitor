@@ -90,9 +90,20 @@
 <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
         <h1 style="font-size: 15px;">{{ suite_run.suite.name }} @ {{ suite_run.environment.name }}</h1>
-        <button onclick="showLogs()" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-size: 11px; text-transform: uppercase;">
-            Pokaż logi
-        </button>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            {% if is_running %}
+            <button onclick="killRun({{ suite_run.id }}, this)" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--accent-red); color: var(--accent-red); cursor: pointer; font-size: 11px; text-transform: uppercase;">
+                ✕ Kill
+            </button>
+            {% else %}
+            <button onclick="deleteRun({{ suite_run.id }})" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; font-size: 11px; text-transform: uppercase;">
+                🗑 Usuń
+            </button>
+            {% endif %}
+            <button onclick="showLogs()" style="padding: 0.5rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-size: 11px; text-transform: uppercase;">
+                Pokaż logi
+            </button>
+        </div>
     </div>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; font-size: 12px;">
@@ -244,6 +255,32 @@
         const modal = document.getElementById('logsModal');
         if (event.target === modal) {
             closeLogs();
+        }
+    }
+
+    async function killRun(id, btn) {
+        if (!confirm('Zatrzymać uruchomiony run?')) return;
+        btn.disabled = true;
+        const res = await fetch(`/suite-runs/${id}/cancel`, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+            location.reload();
+        } else {
+            alert('Nie można zatrzymać: ' + (data.detail || 'błąd'));
+            btn.disabled = false;
+        }
+    }
+
+    async function deleteRun(id) {
+        if (!confirm('Usunąć ten run? Operacja jest nieodwracalna.')) return;
+        const res = await fetch(`/suite-runs/${id}/delete`, { method: 'POST', redirect: 'follow' });
+        if (res.redirected) {
+            window.location.href = res.url;
+        } else if (res.ok) {
+            window.location.href = '/suite-runs';
+        } else {
+            const data = await res.json().catch(() => ({}));
+            alert('Błąd usunięcia: ' + (data.detail || res.status));
         }
     }
 </script>

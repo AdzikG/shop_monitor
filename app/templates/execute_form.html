@@ -220,15 +220,6 @@
     <div class="run-card">
         <h3>▶ Suite Run</h3>
         <form method="POST" action="/execute">
-            <div class="form-group">
-                <label for="suite_id">Suite</label>
-                <select name="suite_id" id="suite_id" required>
-                    <option value="">Wybierz suite...</option>
-                    {% for suite in suites %}
-                    <option value="{{ suite.id }}">{{ suite.name }} ({{ suite.workers }} workers)</option>
-                    {% endfor %}
-                </select>
-            </div>
 
             <div class="form-group">
                 <label for="suite-env-select">Environment</label>
@@ -253,6 +244,16 @@
                 <label for="workers_override">Workers</label>
                 <input type="number" name="workers_override" id="workers_override"
                        min="1" max="10" placeholder="Domyślne z suite">
+            </div>
+
+            <div class="form-group">
+                <label for="suite_id">Suite</label>
+                <select name="suite_id" id="suite_id" required>
+                    <option value="">Wybierz suite...</option>
+                    {% for suite in suites %}
+                    <option value="{{ suite.id }}">{{ suite.name }} ({{ suite.workers }} workers)</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="form-group">
