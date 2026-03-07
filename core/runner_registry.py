@@ -55,6 +55,7 @@ async def run_suite(suite_run_id: int, coro) -> None:
         await run_suite(suite_run.id, run_suite_background(...))
     """
     if len(_running) >= MAX_CONCURRENT_SUITES:
+        coro.close()
         logger.warning(
             f"[RunnerRegistry] Limit {MAX_CONCURRENT_SUITES} równoległych suite osiągnięty — "
             f"suite_run #{suite_run_id} odrzucony"

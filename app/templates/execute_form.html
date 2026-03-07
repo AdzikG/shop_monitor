@@ -127,6 +127,27 @@
         margin-top: 1rem;
     }
 
+    .scenario-count-input {
+        width: 50px !important;
+        background: var(--bg-panel) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text-secondary) !important;
+        padding: 0.15rem 0.3rem !important;
+        font-family: 'Fira Code', monospace !important;
+        font-size: 11px !important;
+        text-align: center !important;
+        margin-left: auto !important;
+        flex-shrink: 0 !important;
+    }
+    .scenario-count-input:focus {
+        outline: none !important;
+        border-color: var(--accent-green) !important;
+        color: var(--text-primary) !important;
+    }
+    .scenario-item:not(.selected) .scenario-count-input {
+        opacity: 0.35 !important;
+    }
+
     /* Scenariusze — lista checkboxów */
     .scenario-list {
         max-height: 280px;
@@ -274,6 +295,12 @@
             </div>
 
             <div class="form-group">
+                <label for="workers_override">Workers</label>
+                <input type="number" name="workers_override" id="workers_override"
+                       min="1" max="10" placeholder="Domyślnie 2">
+            </div>
+
+            <div class="form-group">
                 <label>
                     Scenariusze
                     <span id="selected-count" class="selected-count"></span>
@@ -291,6 +318,11 @@
                                value="{{ scenario.id }}"
                                onchange="updateCount()">
                         <span class="scenario-item-id">#{{ scenario.id }}: </span>{{ scenario.name }}
+                        <input type="number" name="count_{{ scenario.id }}" value="1" min="1" max="30"
+                               class="scenario-count-input"
+                               onclick="event.stopPropagation()"
+                               onchange="updateCount()"
+                               title="Ile razy uruchomić">
                     </label>
                     {% endfor %}
                 </div>
@@ -324,14 +356,23 @@ function updateCount() {
     const selectAll = document.getElementById('select-all');
     const total = document.querySelectorAll('input[name="scenario_ids"]').length;
 
-    countEl.textContent = checked.length > 0 ? `${checked.length} / ${total}` : '';
+    const totalRuns = Array.from(checked).reduce((sum, cb) => {
+        const n = parseInt(document.querySelector(`input[name="count_${cb.value}"]`)?.value) || 1;
+        return sum + n;
+    }, 0);
+
+    if (checked.length > 0) {
+        countEl.textContent = totalRuns === checked.length
+            ? `${checked.length} / ${total}`
+            : `${checked.length} / ${total} — ${totalRuns}×`;
+    } else {
+        countEl.textContent = '';
+    }
     submitBtn.disabled = checked.length === 0;
 
-    // Aktualizuj stan "zaznacz wszystkie"
     selectAll.checked = checked.length === total;
     selectAll.indeterminate = checked.length > 0 && checked.length < total;
 
-    // Podświetl zaznaczone
     document.querySelectorAll('input[name="scenario_ids"]').forEach(cb => {
         const item = document.getElementById('item-' + cb.value);
         if (item) item.classList.toggle('selected', cb.checked);

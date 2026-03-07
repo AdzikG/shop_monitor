@@ -3,6 +3,7 @@ Scenario Executor — uruchamia pojedynczy scenariusz testowy.
 Używa ScenarioContext + ShopRunner zamiast bezpośrednich wywołań Playwright.
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -78,6 +79,10 @@ class ScenarioExecutor:
             else:
                 self.scenario_run.status = RunStatus.SUCCESS
 
+        except asyncio.CancelledError:
+            self.scenario_run.status = RunStatus.CANCELLED
+            raise
+
         except Exception as e:
             logger.error(f"[RUN #{self.scenario_run.id}] Nieoczekiwany błąd: {e}", exc_info=True)
             self.scenario_run.status = RunStatus.FAILED
@@ -109,6 +114,7 @@ class ScenarioExecutor:
             )
             page = await browser_context.new_page()
 
+            _cancelled = False
             try:
                 screenshot_dir = f"screenshots/{self.suite_run_id}/{self.scenario_run.id}"
                 Path(screenshot_dir).mkdir(parents=True, exist_ok=True)
@@ -146,9 +152,22 @@ class ScenarioExecutor:
                         f"Test zatrzymany nieoczekiwanie na '{result.stopped_at}'"
                     )
 
+            except asyncio.CancelledError:
+                _cancelled = True
+                raise
             finally:
-                await browser_context.close()
-                await browser.close()
+                # Shield cleanup from secondary CancelledError (Python 3.10 behaviour:
+                # _must_cancel flag re-raises CancelledError at every new await in finally)
+                try:
+                    await asyncio.shield(browser_context.close())
+                except Exception:
+                    pass
+                try:
+                    await asyncio.shield(browser.close())
+                except Exception:
+                    pass
+                if _cancelled:
+                    raise asyncio.CancelledError()
 
     def _save_run_data(self, result: ShopRunResult) -> None:
         rd = result.run_data

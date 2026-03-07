@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from datetime import datetime, timezone
 import asyncio
 from database import SessionLocal, get_db
 from app.models.suite import Suite
@@ -32,6 +33,40 @@ def get_or_create_manual_suite(db: Session) -> Suite:
         db.commit()
         db.refresh(suite)
     return suite
+
+def cancel_suite_and_scenarios(suite_run_id: int) -> None:
+    """
+    Anuluje SuiteRun oraz wszystkie powiązane z nim ScenarioRun.
+    """
+    db2 = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        
+        # 1. Aktualizacja SuiteRun
+        suite_run = db2.query(SuiteRun).filter_by(id=suite_run_id).first()
+        if suite_run:
+            suite_run.status = SuiteRunStatus.CANCELLED
+            suite_run.finished_at = now
+            db2.commit()
+
+        # 2. Aktualizacja powiązanych ScenarioRun
+        scenario_runs = (
+            db2.query(ScenarioRun)
+            .filter(ScenarioRun.suite_run_id == suite_run_id)
+            .order_by(ScenarioRun.started_at)
+            .all()
+        )
+        
+        if scenario_runs:
+            for scenario in scenario_runs:
+                scenario.status = RunStatus.CANCELLED
+                scenario.finished_at = now
+            
+            db2.commit()
+    except Exception:
+        pass
+    finally:
+        db2.close()
 
 
 @router.get("/execute")
@@ -70,7 +105,8 @@ def _resolve_environment(db: Session, environment_id_str: str, custom_url: str):
             db.commit()
             db.refresh(env)
             return env.id, env
-    return env_exists.id, env_exists
+    env = db.query(Environment).filter_by(id=int(environment_id_str)).first()
+    return env.id, env
 
 
 @router.post("/execute")
@@ -104,14 +140,23 @@ async def execute_run(
 
 @router.post("/execute/manual")
 async def execute_manual(
+    request: Request,
     scenario_ids: List[int] = Form(...),
     environment_id: str = Form(...),
     custom_url: str = Form(""),
+    workers_override: str = Form(""),
     headless: bool = Form(False),
     db: Session = Depends(get_db),
 ):
+    workers = int(workers_override) if workers_override.strip() else None
+
+    form = await request.form()
+    expanded_ids = []
+    for sid in scenario_ids:
+        count = max(1, min(int(form.get(f"count_{sid}") or 1), 20))
+        expanded_ids.extend([sid] * count)
     env_id, _ = _resolve_environment(db, environment_id, custom_url)
-    suite_run_id = await _start_manual(scenario_ids, env_id, headless)
+    suite_run_id = await _start_manual(expanded_ids, env_id, workers, headless)
     return RedirectResponse(url=f"/suite-runs/{suite_run_id}", status_code=303)
 
 
@@ -177,6 +222,7 @@ async def _start_suite(
 async def _start_manual(
     scenario_ids: list,
     environment_id: int,
+    workers_override,
     headless: bool,
 ) -> int:
     db = SessionLocal()
@@ -185,15 +231,18 @@ async def _start_manual(
         if not environment:
             raise HTTPException(status_code=404, detail="Environment nie znaleziony")
 
-        scenarios = (
-            db.query(Scenario)
+        scenarios_map = {
+            s.id: s for s in db.query(Scenario)
             .filter(Scenario.id.in_(scenario_ids), Scenario.is_active == True)
             .all()
-        )
+        }
+        scenarios = [scenarios_map[sid] for sid in scenario_ids if sid in scenarios_map]
         if not scenarios:
             raise HTTPException(status_code=400, detail="Brak aktywnych scenariuszy")
 
         manual_suite = get_or_create_manual_suite(db)
+
+        workers = workers_override or manual_suite.workers
 
         suite_run = SuiteRun(
             suite_id=manual_suite.id,
@@ -212,7 +261,7 @@ async def _start_manual(
 
     await runner_registry.run_suite(
         suite_run_id,
-        _run_manual_background(suite_run_id, scenario_ids, environment_id, headless),
+        _run_manual_background(suite_run_id, scenario_ids, environment_id, workers, headless),
     )
 
     return suite_run_id
@@ -248,36 +297,12 @@ async def _run_suite_background(
             workers=workers,
             headless=headless,
             db=db,
-            suite_run=suite_run,  # przekaż istniejący suite_run
+            suite_run=suite_run, 
         )
         await executor.run()
 
     except asyncio.CancelledError:
-        # Oznacz jako CANCELLED w bazie
-        try:
-            db2 = SessionLocal()
-            suite_run = db2.query(SuiteRun).filter_by(id=suite_run_id).first()
-            if suite_run:
-                suite_run.status = SuiteRunStatus.CANCELLED
-                from datetime import datetime, timezone
-                suite_run.finished_at = datetime.now(timezone.utc)
-                db2.commit()
-            
-            scenario_runs = (
-                db2.query(ScenarioRun)
-                .filter(ScenarioRun.suite_run_id == suite_run_id)
-                .order_by(ScenarioRun.started_at)
-                .all()
-            )
-            if scenario_runs:
-                for scenario in scenario_runs:
-                    scenario.status = RunStatus.CANCELLED
-                    from datetime import datetime, timezone
-                    scenario.finished_at = datetime.now(timezone.utc)
-                db2.commit()
-            db2.close()
-        except Exception:
-            pass
+        cancel_suite_and_scenarios(suite_run_id)
         raise
 
     finally:
@@ -288,24 +313,27 @@ async def _run_manual_background(
     suite_run_id: int,
     scenario_ids: list,
     environment_id: int,
+    workers: int,
     headless: bool,
 ):
     db = SessionLocal()
     try:
+        manual_suite = get_or_create_manual_suite(db)
         environment = db.query(Environment).filter_by(id=environment_id).first()
-        scenarios = (
-            db.query(Scenario)
+        suite_run = db.query(SuiteRun).filter_by(id=suite_run_id).first()
+        
+        scenarios_map = {
+            s.id: s for s in db.query(Scenario)
             .filter(Scenario.id.in_(scenario_ids), Scenario.is_active == True)
             .all()
-        )
-        manual_suite = get_or_create_manual_suite(db)
-        suite_run = db.query(SuiteRun).filter_by(id=suite_run_id).first()
+        }
+        scenarios = [scenarios_map[sid] for sid in scenario_ids if sid in scenarios_map]
 
         executor = SuiteExecutor(
             suite=manual_suite,
             environment=environment,
             scenarios=scenarios,
-            workers=len(scenarios),
+            workers=workers,
             headless=headless,
             db=db,
             suite_run=suite_run,
@@ -313,30 +341,7 @@ async def _run_manual_background(
         await executor.run()
 
     except asyncio.CancelledError:
-        try:
-            db2 = SessionLocal()
-            suite_run = db2.query(SuiteRun).filter_by(id=suite_run_id).first()
-            if suite_run:
-                suite_run.status = SuiteRunStatus.CANCELLED
-                from datetime import datetime, timezone
-                suite_run.finished_at = datetime.now(timezone.utc)
-                db2.commit()
-
-            scenario_runs = (
-                db2.query(ScenarioRun)
-                .filter(ScenarioRun.suite_run_id == suite_run_id)
-                .order_by(ScenarioRun.started_at)
-                .all()
-            )
-            if scenario_runs:
-                for scenario in scenario_runs:
-                    scenario.status = RunStatus.CANCELLED
-                    from datetime import datetime, timezone
-                    scenario.finished_at = datetime.now(timezone.utc)
-                db2.commit()
-            db2.close()
-        except Exception:
-            pass
+        cancel_suite_and_scenarios(suite_run_id)
         raise
 
     finally:
