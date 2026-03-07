@@ -160,6 +160,10 @@ class SuiteExecutor:
         root.setLevel(logging.DEBUG)
         root.addHandler(self.log_handler)
 
+        # Wycisz biblioteki zewnętrzne generujące szum w logach
+        for noisy in ('multipart', 'multipart.multipart'):
+            logging.getLogger(noisy).setLevel(logging.WARNING)
+
     # ── Główna logika finalizacji ─────────────────────────────────────────────
 
     def _finalize_suite_run(self, suite_run: SuiteRun, results: list):
