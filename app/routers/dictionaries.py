@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from app.models.dictionary import Dictionary
 from app.templates import templates
+from core.auth_core import get_current_user
 
 router = APIRouter(tags=["dictionaries"])
 
@@ -40,6 +41,8 @@ async def dictionary_create(
     order: int = Form(0),
     is_active: bool = Form(False),
 ):
+    user = get_current_user(request)
+    username = user["username"] if user else None
     entry = Dictionary(
         category=category,
         system_name=system_name,
@@ -49,6 +52,8 @@ async def dictionary_create(
         value_type=value_type,
         order=order,
         is_active=is_active,
+        created_by=username,
+        updated_by=username,
     )
     db.add(entry)
     db.commit()
@@ -80,6 +85,7 @@ async def dictionary_update(
     is_active: bool = Form(False),
 ):
     entry = _get_or_404(db, entry_id)
+    user = get_current_user(request)
     entry.category = category
     entry.system_name = system_name
     entry.display_name = display_name
@@ -88,6 +94,7 @@ async def dictionary_update(
     entry.value_type = value_type
     entry.order = order
     entry.is_active = is_active
+    entry.updated_by = user["username"] if user else None
     db.commit()
     return RedirectResponse(url="/dictionaries", status_code=303)
 

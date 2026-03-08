@@ -262,6 +262,7 @@
             <th style="width: 100px;">Kod poczt.</th>
             <th style="width: 150px;">Płatność</th>
             <th style="width: 120px;">Status</th>
+            <th style="width: 110px;">Zaktualizował</th>
             <th style="width: 140px;">Akcje</th>
         </tr>
         {# Filtry #}
@@ -324,6 +325,7 @@
                     <option value="nieaktywny">nieaktywny</option>
                 </select>
             </th>
+            <th></th>
             <th></th>
         </tr>
     </thead>
@@ -431,6 +433,17 @@
                     <span class="status inactive" data-active="false">nieaktywny</span>
                     {% endif %}
                 </span>
+            </td>
+
+            {# Zaktualizował #}
+            <td style="font-size: 10px; color: var(--text-secondary);">
+                {% if s.updated_by %}
+                    {{ s.updated_by }}<br>
+                    <span style="opacity: 0.7;">{{ s.updated_at | datetimeformat }}</span>
+                {% elif s.created_by %}
+                    {{ s.created_by }}<br>
+                    <span style="opacity: 0.7;">{{ s.created_at | datetimeformat }}</span>
+                {% else %}—{% endif %}
             </td>
 
             {# Akcje #}

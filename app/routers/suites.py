@@ -8,6 +8,7 @@ from app.models.suite import Suite
 from app.models.scenario import Scenario
 from app.models.suite_scenario import SuiteScenario
 from app.templates import templates
+from core.auth_core import get_current_user
 
 router = APIRouter(tags=["suites"])
 
@@ -72,11 +73,15 @@ async def suite_create(
     is_active: bool = Form(False),
     scenario_ids: list[int] = Form(default=[]),
 ):
+    user = get_current_user(request)
+    username = user["username"] if user else None
     suite = Suite(
         name=name,
         description=description or None,
         workers=workers,
         is_active=is_active,
+        created_by=username,
+        updated_by=username,
     )
     db.add(suite)
     db.flush()  # pobierz suite.id przed commitem
@@ -148,10 +153,12 @@ async def suite_update(
     scenario_ids: list[int] = Form(default=[]),
 ):
     suite = _get_or_404(db, suite_id)
+    user = get_current_user(request)
     suite.name = name
     suite.description = description or None
     suite.workers = workers
     suite.is_active = is_active
+    suite.updated_by = user["username"] if user else None
 
     _sync_suite_scenarios(db, suite_id, scenario_ids)
 

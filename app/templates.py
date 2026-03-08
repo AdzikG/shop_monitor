@@ -3,6 +3,10 @@ from datetime import datetime, timezone
 
 templates = Jinja2Templates(directory="app/templates")
 
+# Jinja2 global — dostęp do aktualnego użytkownika w każdym szablonie
+from core.auth_core import get_current_user as _get_current_user
+templates.env.globals["get_current_user"] = _get_current_user
+
 # Custom filter dla Jinja2
 def duration(seconds):
     """Konwertuje sekundy na czytelny format."""
@@ -36,3 +40,14 @@ def parse_json(value):
         return []
 
 templates.env.filters["parse_json"] = parse_json
+
+def datetimeformat(dt):
+    """Formatuje datetime do czytelnej postaci."""
+    if dt is None:
+        return ""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    local_dt = dt.astimezone()
+    return local_dt.strftime('%Y-%m-%d %H:%M')
+
+templates.env.filters["datetimeformat"] = datetimeformat

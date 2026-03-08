@@ -7,6 +7,8 @@ from app.routers import (
 )
 from app.routers import scheduler_router
 from app.routers import api_error_exclusions
+from app.routers import users_router
+from app.middleware.auth_middleware import AuthMiddleware
 from app import scheduler
 
 
@@ -20,6 +22,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="WACEK - Strażnik TERGsasu", lifespan=lifespan)
+app.add_middleware(AuthMiddleware)
 
 # Static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -43,6 +46,7 @@ app.include_router(environments.router)
 app.include_router(config.router)
 app.include_router(scheduler_router.router)
 app.include_router(api_error_exclusions.router)
+app.include_router(users_router.router)
 
 
 @app.get("/")

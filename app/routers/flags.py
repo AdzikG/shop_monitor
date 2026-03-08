@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from app.models.flag_definition import FlagDefinition
 from app.templates import templates
+from core.auth_core import get_current_user
 
 router = APIRouter(tags=["flags"])
 
@@ -29,17 +30,22 @@ async def flag_new_form(request: Request):
 
 @router.post("/flags/new")
 async def flag_create(
+    request: Request,
     db: Session = Depends(get_db),
     name: str = Form(...),
     display_name: str = Form(...),
     description: str = Form(""),
     is_active: bool = Form(False),
 ):
+    user = get_current_user(request)
+    username = user["username"] if user else None
     flag = FlagDefinition(
         name=name,
         display_name=display_name,
         description=description or None,
         is_active=is_active,
+        created_by=username,
+        updated_by=username,
     )
     db.add(flag)
     db.commit()
@@ -59,6 +65,7 @@ async def flag_edit_form(flag_id: int, request: Request, db: Session = Depends(g
 @router.post("/flags/{flag_id}/edit")
 async def flag_update(
     flag_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     name: str = Form(...),
     display_name: str = Form(...),
@@ -66,10 +73,12 @@ async def flag_update(
     is_active: bool = Form(False),
 ):
     flag = _get_or_404(db, flag_id)
+    user = get_current_user(request)
     flag.name = name
     flag.display_name = display_name
     flag.description = description or None
     flag.is_active = is_active
+    flag.updated_by = user["username"] if user else None
     db.commit()
     return RedirectResponse(url="/flags", status_code=303)
 

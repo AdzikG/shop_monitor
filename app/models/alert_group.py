@@ -119,6 +119,10 @@ class AlertGroup(Base):
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     closed_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
+    # Audit trail
+    created_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    updated_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
     # Relacje
     last_suite_run: Mapped["SuiteRun"] = relationship(back_populates="alert_groups")
     duplicate_of: Mapped[Optional["AlertGroup"]] = relationship(

@@ -42,6 +42,8 @@ class ScheduledJob(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Relacje
     suite: Mapped["Suite"] = relationship(back_populates="scheduled_jobs")

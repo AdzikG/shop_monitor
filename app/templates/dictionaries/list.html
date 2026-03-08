@@ -23,6 +23,7 @@
             <th>Wartości</th>
             <th>Kolejność</th>
             <th>Status</th>
+            <th>Zaktualizował</th>
             <th>Akcje</th>
         </tr>
     </thead>
@@ -48,6 +49,15 @@
                 {% else %}
                 <span class="status inactive">nieaktywny</span>
                 {% endif %}
+            </td>
+            <td style="font-size: 10px; color: var(--text-secondary);">
+                {% if entry.updated_by %}
+                    {{ entry.updated_by }}<br>
+                    <span style="opacity: 0.7;">{{ entry.updated_at | datetimeformat }}</span>
+                {% elif entry.created_by %}
+                    {{ entry.created_by }}<br>
+                    <span style="opacity: 0.7;">{{ entry.created_at | datetimeformat }}</span>
+                {% else %}—{% endif %}
             </td>
             <td style="white-space: nowrap;">
                 <a href="/dictionaries/{{ entry.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.75rem;">Edytuj</a>

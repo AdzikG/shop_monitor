@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Użytkownicy — WACEK{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h2 style="font-size:13px; text-transform:uppercase; letter-spacing:2px;">Użytkownicy</h2>
+    <a href="/users/new" style="background:var(--accent-green);color:var(--bg-dark);padding:0.4rem 1rem;text-decoration:none;font-size:11px;text-transform:uppercase;font-weight:700;letter-spacing:1px;">+ Nowy</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Login</th>
+            <th>Rola</th>
+            <th>Aktywny</th>
+            <th>Utworzony</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td class="mono">{{ u.id }}</td>
+            <td>{{ u.username }}</td>
+            <td>
+                <span style="color: {% if u.role == 'admin' %}var(--accent-yellow){% else %}var(--text-secondary){% endif %}; font-size:10px; text-transform:uppercase; letter-spacing:1px;">
+                    {{ u.role }}
+                </span>
+            </td>
+            <td>
+                {% if u.is_active %}
+                    <span class="status success">tak</span>
+                {% else %}
+                    <span class="status inactive">nie</span>
+                {% endif %}
+            </td>
+            <td class="mono" style="font-size:10px; color:var(--text-secondary);">{{ u.created_at | local_time }}</td>
+            <td>
+                <a href="/users/{{ u.id }}/edit" class="link" style="margin-right:1rem;">Edytuj</a>
+                <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline;"
+                      onsubmit="return confirm('Usunąć użytkownika {{ u.username }}?')">
+                    <button type="submit" style="background:none;border:none;color:var(--accent-red);cursor:pointer;font-family:inherit;font-size:11px;padding:0;text-decoration:underline;">Usuń</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

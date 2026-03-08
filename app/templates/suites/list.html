@@ -16,6 +16,7 @@
             <th>Wszystkie scenariusze</th>
             <th>Workers</th>
             <th>Status</th>
+            <th>Zaktualizował</th>
             <th>Akcje</th>
         </tr>
     </thead>
@@ -38,6 +39,15 @@
                 {% else %}
                     <span class="status inactive">NIEAKTYWNY</span>
                 {% endif %}
+            </td>
+            <td style="font-size: 10px; color: var(--text-secondary);">
+                {% if suite.updated_by %}
+                    {{ suite.updated_by }}<br>
+                    <span style="opacity: 0.7;">{{ suite.updated_at | datetimeformat }}</span>
+                {% elif suite.created_by %}
+                    {{ suite.created_by }}<br>
+                    <span style="opacity: 0.7;">{{ suite.created_at | datetimeformat }}</span>
+                {% else %}—{% endif %}
             </td>
             <td>
                 <a href="/suites/{{ suite.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.5rem;">Edytuj</a>

@@ -15,6 +15,7 @@ from app.models.run import ScenarioRun
 from app.models.environment import Environment
 from app.models.scenario import Scenario
 from app.templates import templates
+from core.auth_core import get_current_user
 
 router = APIRouter(tags=["alerts"])
 
@@ -200,15 +201,18 @@ async def alert_detail(
 @router.post("/alerts/{alert_group_id}/assign")
 async def assign_alert(
     alert_group_id: int,
-    analyst_name: str = Form(...),
+    request: Request,
     db: Session = Depends(get_db)
 ):
     alert = db.query(AlertGroup).filter(AlertGroup.id == alert_group_id).first()
     if not alert:
         return RedirectResponse(url="/alerts", status_code=303)
 
-    alert.assigned_to  = analyst_name
+    user = get_current_user(request)
+    username = user["username"] if user else None
+    alert.assigned_to  = username
     alert.assigned_at  = datetime.now(timezone.utc)
+    alert.updated_by   = username
 
     if alert.status == AlertStatus.OPEN:
         alert.status = AlertStatus.IN_PROGRESS
@@ -222,6 +226,7 @@ async def assign_alert(
 @router.post("/alerts/{alert_group_id}/resolve")
 async def resolve_alert(
     alert_group_id: int,
+    request: Request,
     resolution_type: str = Form(...),
     resolution_note: str = Form(""),
     duplicate_of_id: Optional[str] = Form(None),
@@ -247,10 +252,13 @@ async def resolve_alert(
         except ValueError:
             pass
 
+    user = get_current_user(request)
     alert.resolution_type = res_type.value
     alert.resolution_note = resolution_note or None
     alert.status          = new_status
     alert.resolved_at     = datetime.now(timezone.utc)
+    alert.updated_by      = user["username"] if user else None
+    alert.closed_by       = user["username"] if user else None
 
     if res_type == ResolutionType.DUPLICATE and dup_id:
         alert.duplicate_of_id = dup_id
@@ -266,6 +274,7 @@ async def resolve_alert(
 @router.post("/alerts/{alert_group_id}/close")
 async def close_alert(
     alert_group_id: int,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """
@@ -276,8 +285,11 @@ async def close_alert(
     if not alert:
         return RedirectResponse(url="/alerts", status_code=303)
 
-    alert.status     = AlertStatus.CLOSED
+    user = get_current_user(request)
+    alert.status      = AlertStatus.CLOSED
     alert.resolved_at = datetime.now(timezone.utc)
+    alert.updated_by  = user["username"] if user else None
+    alert.closed_by   = user["username"] if user else None
 
     db.commit()
     return RedirectResponse(url="/alerts", status_code=303)

@@ -202,6 +202,7 @@
             <th>Następny run</th>
             <th>Ostatni run</th>
             <th>Status</th>
+            <th>Zaktualizował</th>
             <th>Akcje</th>
         </tr>
     </thead>
@@ -240,6 +241,15 @@
                         {{ 'ON' if job.is_enabled else 'OFF' }}
                     </button>
                 </form>
+            </td>
+            <td style="font-size: 10px; color: var(--text-secondary);">
+                {% if job.updated_by %}
+                    {{ job.updated_by }}<br>
+                    <span style="opacity: 0.7;">{{ job.updated_at | datetimeformat }}</span>
+                {% elif job.created_by %}
+                    {{ job.created_by }}<br>
+                    <span style="opacity: 0.7;">{{ job.created_at | datetimeformat }}</span>
+                {% else %}—{% endif %}
             </td>
             <td style="display:flex; gap:0.4rem;">
                 <form method="post" action="/scheduler/{{ job.id }}/run-now" style="display:inline;">

@@ -8,6 +8,7 @@ from app.models.suite import Suite
 from app.models.environment import Environment
 from app.templates import templates
 from app.scheduler import compute_next_run
+from core.auth_core import get_current_user
 
 router = APIRouter(tags=["scheduler"])
 
@@ -32,6 +33,7 @@ async def scheduler_list(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/scheduler")
 async def scheduler_create(
+    request: Request,
     suite_id: int = Form(...),
     environment_id: int = Form(...),
     workers: int = Form(...),
@@ -43,6 +45,8 @@ async def scheduler_create(
     if next_run is None:
         raise HTTPException(status_code=400, detail=f"Nieprawidłowe wyrażenie cron: '{cron}'")
 
+    user = get_current_user(request)
+    username = user["username"] if user else None
     job = ScheduledJob(
         suite_id=suite_id,
         environment_id=environment_id,
@@ -51,6 +55,8 @@ async def scheduler_create(
         cron=cron,
         is_enabled=True,
         next_run_at=next_run,
+        created_by=username,
+        updated_by=username,
     )
     db.add(job)
     db.commit()

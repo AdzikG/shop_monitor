@@ -11,6 +11,7 @@ from app.models.dictionary import Dictionary
 from app.models.flag_definition import FlagDefinition, ScenarioFlag
 from app.models.alert import Alert
 from app.templates import templates
+from core.auth_core import get_current_user
 
 router = APIRouter(tags=["scenarios"])
 
@@ -139,6 +140,8 @@ async def scenario_create(request: Request, db: Session = Depends(get_db)):
     urls = [u.strip() for u in form.get("listing_urls", "").split("\n") if u.strip()]
     selected_services = form.getlist("services")
 
+    user = get_current_user(request)
+    username = user["username"] if user else None
     scenario = Scenario(
         name=form.get("name", ""),
         description=form.get("description") or None,
@@ -152,6 +155,8 @@ async def scenario_create(request: Request, db: Session = Depends(get_db)):
         is_order="is_order" in form,
         guarantee="guarantee" in form,
         is_active=True,
+        created_by=username,
+        updated_by=username,
     )
     db.add(scenario)
     db.flush()
@@ -207,6 +212,7 @@ async def scenario_update(scenario_id: int, request: Request, db: Session = Depe
     urls = [u.strip() for u in form.get("listing_urls", "").split("\n") if u.strip()]
     selected_services = form.getlist("services")
 
+    user = get_current_user(request)
     scenario.name = form.get("name", "")
     scenario.description = form.get("description") or None
     scenario.listing_urls = urls
@@ -219,6 +225,7 @@ async def scenario_update(scenario_id: int, request: Request, db: Session = Depe
     scenario.is_order = "is_order" in form
     scenario.guarantee = "guarantee" in form
     scenario.is_active = "is_active" in form
+    scenario.updated_by = user["username"] if user else None
 
     all_flags = db.query(FlagDefinition).filter_by(is_active=True).all()
     enabled_ids = [int(i) for i in form.getlist("flag_ids")]

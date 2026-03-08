@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'create' %}Nowy użytkownik{% else %}Edycja: {{ user.username }}{% endif %} — WACEK{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px;">
+    <h2 style="font-size:13px; text-transform:uppercase; letter-spacing:2px; margin-bottom:1.5rem;">
+        {% if mode == 'create' %}Nowy użytkownik{% else %}Edycja: {{ user.username }}{% endif %}
+    </h2>
+
+    {% if error %}
+    <div style="color: var(--accent-red); font-size: 11px; margin-bottom: 1rem; border: 1px solid var(--accent-red); padding: 0.5rem 0.75rem;">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{% if mode == 'create' %}/users/new{% else %}/users/{{ user.id }}/edit{% endif %}">
+        <div style="margin-bottom: 1rem;">
+            <label style="display:block; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); margin-bottom:0.4rem;">Login</label>
+            <input type="text" name="username" value="{{ user.username if user else '' }}" required autofocus
+                pattern="[a-z]+_[a-z]+" title="Format: imie_nazwisko (tylko małe litery i podkreślnik)"
+                placeholder="jan_kowalski"
+                style="width:100%;box-sizing:border-box;background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);padding:0.5rem 0.75rem;font-family:'Fira Code',monospace;font-size:13px;">
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:0.3rem;">Format: imie_nazwisko</div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display:block; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); margin-bottom:0.4rem;">
+                Hasło{% if mode == 'edit' %} (puste = bez zmian){% endif %}
+            </label>
+            <input type="password" name="password" {% if mode == 'create' %}required{% endif %}
+                style="width:100%;box-sizing:border-box;background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);padding:0.5rem 0.75rem;font-family:'Fira Code',monospace;font-size:13px;">
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display:block; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); margin-bottom:0.4rem;">Rola</label>
+            <select name="role" style="width:100%;box-sizing:border-box;background:var(--bg-dark);border:1px solid var(--border);color:var(--text-primary);padding:0.5rem 0.75rem;font-family:'Fira Code',monospace;font-size:13px;">
+                <option value="user" {% if user and user.role == 'user' %}selected{% endif %}>user</option>
+                <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>admin</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom: 1.5rem; display:flex; align-items:center; gap:0.75rem;">
+            <input type="checkbox" name="is_active" id="is_active" value="true"
+                {% if user is none or user.is_active %}checked{% endif %}>
+            <label for="is_active" style="font-size:11px; cursor:pointer;">Aktywny</label>
+        </div>
+
+        <div style="display:flex; gap:1rem;">
+            <button type="submit" style="background:var(--accent-green);border:none;color:var(--bg-dark);padding:0.5rem 1.5rem;cursor:pointer;font-family:inherit;font-size:11px;text-transform:uppercase;font-weight:700;letter-spacing:1px;">
+                {% if mode == 'create' %}Utwórz{% else %}Zapisz{% endif %}
+            </button>
+            <a href="/users" style="color:var(--text-secondary);padding:0.5rem 1rem;font-size:11px;text-transform:uppercase;border:1px solid var(--border);text-decoration:none;">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -24,6 +24,9 @@ class Environment(Base):
     type: Mapped[str] = mapped_column(String(50), nullable=False, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, onupdate=now_utc)
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Relacje
     runs: Mapped[list["ScenarioRun"]] = relationship(back_populates="environment")

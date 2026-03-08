@@ -207,21 +207,6 @@
 
 {% block content %}
 
-{# ── Modal: sesja analityka ───────────────────────────────────────────────── #}
-<div id="analyst-modal" class="modal-overlay">
-    <div class="modal">
-        <h3>Identyfikacja weryfikatora alertów</h3>
-        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1.5rem;">
-            Podaj imię i nazwisko — zostanie zapamiętane w tej przeglądarce.
-        </p>
-        <div class="form-row">
-            <label>Imię i nazwisko</label>
-            <input type="text" id="analyst-name-input" placeholder="Jan Kowalski" style="width:100%; box-sizing:border-box;">
-        </div>
-        <button class="btn-primary" onclick="saveAnalystName()">Rozpocznij sesję</button>
-    </div>
-</div>
-
 {# ── Modal: resolve ───────────────────────────────────────────────────────── #}
 <div id="resolve-modal" class="modal-overlay">
     <div class="modal">
@@ -271,10 +256,7 @@
 
 {# ── Nagłówek ─────────────────────────────────────────────────────────────── #}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; height: 32px;">
-    <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">
-    Alerty
-    <span id="analyst-label" style="font-size: 11px; color: var(--text-secondary); font-weight: normal; margin-left: 1rem;"></span>
-    </h2>
+    <h2 style="font-size:14px; letter-spacing:2px; text-transform:uppercase;">Alerty</h2>
 </div>
 
 {# ── Statystyki ───────────────────────────────────────────────────────────── #}
@@ -437,15 +419,14 @@
             {# Assigned #}
             <td style="font-size: 11px; color: var(--text-secondary);">
                 {% if alert.assigned_to %}
-                    👤 {{ alert.assigned_to }}
+                    {{ alert.assigned_to }}
                 {% endif %}
             </td>
 
             {# Actions #}
             <td style="white-space: nowrap;">
                 {% if alert.status.value == 'open' %}
-                    <form method="POST" action="/alerts/{{ alert.id }}/assign" style="display:inline;" onsubmit="injectAnalystName(this)">
-                        <input type="hidden" name="analyst_name" value="">
+                    <form method="POST" action="/alerts/{{ alert.id }}/assign" style="display:inline;">
                         <button type="submit" class="action-btn" style="color: var(--text-secondary);">Start</button>
                     </form>
 
@@ -530,30 +511,6 @@
 
 {# ── JavaScript ───────────────────────────────────────────────────────────── #}
 <script>
-// ── Sesja analityka ──────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-    const name = localStorage.getItem('analyst_name');
-    if (!name) {
-        document.getElementById('analyst-modal').classList.add('active');
-    } else {
-        document.getElementById('analyst-label').textContent = '👤 ' + name;
-    }
-});
-
-function saveAnalystName() {
-    const input = document.getElementById('analyst-name-input');
-    const name = input.value.trim();
-    if (!name) return;
-    localStorage.setItem('analyst_name', name);
-    document.getElementById('analyst-modal').classList.remove('active');
-    document.getElementById('analyst-label').textContent = '👤 ' + name;
-}
-
-function injectAnalystName(form) {
-    const name = localStorage.getItem('analyst_name') || '';
-    form.querySelector('input[name="analyst_name"]').value = name;
-}
-
 // ── Resolve modal ────────────────────────────────────────────────────────────
 function openResolveModal(alertId) {
     const form = document.getElementById('resolve-form');

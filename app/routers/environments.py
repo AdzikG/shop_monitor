@@ -6,6 +6,7 @@ from database import get_db
 from app.models.environment import Environment
 from app.models.suite_run import SuiteRun
 from app.templates import templates
+from core.auth_core import get_current_user
 
 router = APIRouter(tags=["environments"])
 
@@ -30,17 +31,22 @@ async def environment_new_form(request: Request):
 
 @router.post("/environments/new")
 async def environment_create(
+    request: Request,
     db: Session = Depends(get_db),
     name: str = Form(...),
     base_url: str = Form(...),
     type: str = Form(""),
     is_active: bool = Form(False),
 ):
+    user = get_current_user(request)
+    username = user["username"] if user else None
     env = Environment(
         name=name,
         base_url=base_url,
         type=type,
         is_active=is_active,
+        created_by=username,
+        updated_by=username,
     )
     db.add(env)
     db.commit()
@@ -60,6 +66,7 @@ async def environment_edit_form(env_id: int, request: Request, db: Session = Dep
 @router.post("/environments/{env_id}/edit")
 async def environment_update(
     env_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     name: str = Form(...),
     base_url: str = Form(...),
@@ -67,10 +74,12 @@ async def environment_update(
     is_active: bool = Form(False),
 ):
     env = _get_or_404(db, env_id)
+    user = get_current_user(request)
     env.name = name
     env.base_url = base_url
     env.type = type
     env.is_active = is_active
+    env.updated_by = user["username"] if user else None
     db.commit()
     return RedirectResponse(url="/environments", status_code=303)
 

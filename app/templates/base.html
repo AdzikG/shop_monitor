@@ -218,175 +218,22 @@
             <a href="/suite-runs" {% if "/suite-runs" in request.url.path %}class="active"{% endif %}>Runy</a>
             <a href="/alerts" {% if "/alerts" in request.url.path %}class="active"{% endif %}>Alerty</a>
             <a href="/config" {% if "/config" in request.url.path %}class="active"{% endif %}>Konfiguracja</a>
+            {% set cu = get_current_user(request) %}
+            {% if cu %}
+                {% if cu.role == 'admin' %}<a href="/users" {% if "/users" in request.url.path %}class="active"{% endif %}>Użytkownicy</a>{% endif %}
+                <span style="color: var(--text-secondary); font-size: 10px; opacity: 0.7;">{{ cu.username }} [{{ cu.role }}]</span>
+                <form method="POST" action="/auth/logout" style="display:inline;">
+                    <button type="submit" style="background:none;border:1px solid var(--border);color:var(--text-secondary);padding:0.2rem 0.6rem;cursor:pointer;font-family:inherit;font-size:10px;text-transform:uppercase;letter-spacing:1px;">Wyloguj</button>
+                </form>
+            {% else %}
+                <a href="/auth/login">Zaloguj się</a>
+            {% endif %}
         </nav>
     </header>
     
     <main>
         {% block content %}{% endblock %}
     </main>
-<div id="pin-modal" style="
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-">
-    <div style="
-        background: var(--bg-panel);
-        border: 1px solid var(--border);
-        padding: 2rem;
-        width: 320px;
-        max-width: 90vw;
-    ">
-        <h3 style="font-size: 12px; text-transform: uppercase; letter-spacing: 2px;
-                   color: var(--accent-green); margin-bottom: 1.5rem;">
-            🔒 Autoryzacja
-        </h3>
-        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 1rem;">
-            Podaj PIN aby wykonać akcję.
-        </p>
-        <input
-            type="password"
-            id="pin-input"
-            placeholder="PIN"
-            style="
-                width: 100%;
-                box-sizing: border-box;
-                background: var(--bg-dark);
-                border: 1px solid var(--border);
-                color: var(--text-primary);
-                padding: 0.5rem 0.75rem;
-                font-family: 'Fira Code', monospace;
-                font-size: 14px;
-                margin-bottom: 0.5rem;
-            "
-        >
-        <div id="pin-error" style="
-            font-size: 11px;
-            color: var(--accent-red);
-            min-height: 1.2rem;
-            margin-bottom: 1rem;
-        "></div>
-        <div style="display: flex; gap: 0.75rem;">
-            <button onclick="submitPin()" style="
-                background: var(--accent-green);
-                border: none;
-                color: var(--bg-dark);
-                padding: 0.5rem 1.2rem;
-                cursor: pointer;
-                font-size: 11px;
-                text-transform: uppercase;
-                font-weight: 700;
-                letter-spacing: 1px;
-            ">Zatwierdź</button>
-            <button onclick="closePinModal()" style="
-                background: none;
-                border: 1px solid var(--border);
-                color: var(--text-secondary);
-                padding: 0.5rem 1.2rem;
-                cursor: pointer;
-                font-size: 11px;
-                text-transform: uppercase;
-            ">Anuluj</button>
-        </div>
-    </div>
-</div>
-
-<script>
-// ── PIN Modal ────────────────────────────────────────────────────────────────
-
-let _pendingForm = null;  // formularz czekający na autoryzację
-
-function openPinModal(form) {
-    _pendingForm = form;
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-error').textContent = '';
-    const modal = document.getElementById('pin-modal');
-    modal.style.display = 'flex';
-    setTimeout(() => document.getElementById('pin-input').focus(), 50);
-}
-
-function closePinModal() {
-    document.getElementById('pin-modal').style.display = 'none';
-    _pendingForm = null;
-}
-
-async function submitPin() {
-    const pin = document.getElementById('pin-input').value.trim();
-    if (!pin) return;
-
-    const errorEl = document.getElementById('pin-error');
-    errorEl.textContent = '';
-
-    try {
-        const res = await fetch('/auth/verify-pin', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: `pin=${encodeURIComponent(pin)}`
-        });
-        const data = await res.json();
-
-        if (data.ok) {
-            closePinModal();
-            if (_pendingForm) {
-                // Usuń interceptor żeby nie zapętlić
-                _pendingForm._pinVerified = true;
-                _pendingForm.submit();
-            }
-        } else {
-            errorEl.textContent = data.error || 'Nieprawidłowy PIN';
-            document.getElementById('pin-input').value = '';
-            document.getElementById('pin-input').focus();
-        }
-    } catch (e) {
-        errorEl.textContent = 'Błąd połączenia';
-    }
-}
-
-// Enter w polu PIN
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('pin-input').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') submitPin();
-    });
-
-    // Przechwytuj wszystkie formularze POST — pokaż modal jeśli brak sesji
-    document.addEventListener('submit', function(e) {
-        const form = e.target;
-
-        // Pomiń GET, pomiń już zweryfikowane, pomiń sam formularz auth
-        if (form.method.toLowerCase() === 'get') return;
-        if (form._pinVerified) return;
-        if (form.action && form.action.includes('/auth/')) return;
-
-        // ZAWSZE preventDefault synchronicznie — potem sprawdź sesję async
-        e.preventDefault();
-
-        fetch('/auth/check-session')
-            .then(r => r.json())
-            .then(data => {
-                if (data.ok) {
-                    // Sesja aktywna — wyślij bez modalu
-                    form._pinVerified = true;
-                    form.submit();
-                } else {
-                    // Brak sesji — pokaż modal
-                    openPinModal(form);
-                }
-            })
-            .catch(() => {
-                // Błąd połączenia — pokaż modal
-                openPinModal(form);
-            });
-    }, true);  // capture phase — przed HTMX
-});
-
-// Zamknij modal klikając poza nim
-document.getElementById('pin-modal').addEventListener('click', function(e) {
-    if (e.target === this) closePinModal();
-});
-</script>
 
 </body>
 </html>

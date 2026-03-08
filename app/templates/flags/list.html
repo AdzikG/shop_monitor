@@ -21,6 +21,7 @@
             <th>Opis</th>
             <th>Scenariusze</th>
             <th>Status</th>
+            <th>Zaktualizował</th>
             <th>Akcje</th>
         </tr>
     </thead>
@@ -42,6 +43,15 @@
                 {% else %}
                 <span class="status inactive">nieaktywna</span>
                 {% endif %}
+            </td>
+            <td style="font-size: 10px; color: var(--text-secondary);">
+                {% if flag.updated_by %}
+                    {{ flag.updated_by }}<br>
+                    <span style="opacity: 0.7;">{{ flag.updated_at | datetimeformat }}</span>
+                {% elif flag.created_by %}
+                    {{ flag.created_by }}<br>
+                    <span style="opacity: 0.7;">{{ flag.created_at | datetimeformat }}</span>
+                {% else %}—{% endif %}
             </td>
             <td style="white-space: nowrap;">
                 <a href="/flags/{{ flag.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.75rem;">Edytuj</a>

@@ -20,6 +20,7 @@
             <th>Typ</th>
             <th>Harmonogram</th>
             <th>Status</th>
+            <th>Zaktualizował</th>
             <th>Akcje</th>
         </tr>
     </thead>
@@ -53,6 +54,15 @@
                 {% else %}
                 <span class="status inactive">nieaktywny</span>
                 {% endif %}
+            </td>
+            <td style="font-size: 10px; color: var(--text-secondary);">
+                {% if config.updated_by %}
+                    {{ config.updated_by }}<br>
+                    <span style="opacity: 0.7;">{{ config.updated_at | datetimeformat }}</span>
+                {% elif config.created_by %}
+                    {{ config.created_by }}<br>
+                    <span style="opacity: 0.7;">{{ config.created_at | datetimeformat }}</span>
+                {% else %}—{% endif %}
             </td>
             <td>
                 <a href="/alert-configs/{{ config.id }}/edit" style="color: var(--text-primary); text-decoration: none; font-size: 11px; margin-right: 0.5rem;">Edytuj</a>

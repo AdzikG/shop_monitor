@@ -1,7 +1,7 @@
 from sqlalchemy import String, DateTime, ForeignKey, Text, Boolean, Time, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
-from datetime import time, date
+from datetime import time, date, datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -38,7 +38,9 @@ class AlertConfig(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
     # Metadane
-    updated_by: Mapped[str | None] = mapped_column(String(100))
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, onupdate=datetime.utcnow)
     
     # Relacje
     alert_type: Mapped["AlertType"] = relationship(back_populates="alert_configs")

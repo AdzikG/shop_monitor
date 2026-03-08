@@ -7,6 +7,7 @@ from database import get_db
 from app.models.alert_config import AlertConfig
 from app.models.alert_type import AlertType
 from app.templates import templates
+from core.auth_core import get_current_user
 
 router = APIRouter(tags=["alert_configs"])
 
@@ -47,6 +48,8 @@ async def alert_config_create(
     disabled_from_time = form.get('disabled_from_time')
     disabled_to_time = form.get('disabled_to_time')
     
+    user = get_current_user(request)
+    username = user["username"] if user else None
     config = AlertConfig(
         name=form.get('name'),
         business_rule=form.get('business_rule'),
@@ -57,7 +60,8 @@ async def alert_config_create(
         disabled_from_time=time.fromisoformat(disabled_from_time) if disabled_from_time else None,
         disabled_to_time=time.fromisoformat(disabled_to_time) if disabled_to_time else None,
         is_active='is_active' in form,
-        updated_by=form.get('updated_by') or None,
+        created_by=username,
+        updated_by=username,
     )
     
     db.add(config)
@@ -113,6 +117,7 @@ async def alert_config_update(
     disabled_from_time = form.get('disabled_from_time')
     disabled_to_time = form.get('disabled_to_time')
     
+    user = get_current_user(request)
     config.name = form.get('name')
     config.business_rule = form.get('business_rule')
     config.alert_type_id = int(form.get('alert_type_id'))
@@ -122,7 +127,7 @@ async def alert_config_update(
     config.disabled_from_time = time.fromisoformat(disabled_from_time) if disabled_from_time else None
     config.disabled_to_time = time.fromisoformat(disabled_to_time) if disabled_from_time else None
     config.is_active = 'is_active' in form
-    config.updated_by = form.get('updated_by') or None
+    config.updated_by = user["username"] if user else None
     
     db.commit()
     
