@@ -1,4 +1,4 @@
-from sqlalchemy import String, DateTime, ForeignKey, Enum
+from sqlalchemy import String, DateTime, ForeignKey, Enum, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, now_utc
 from datetime import datetime
@@ -30,7 +30,7 @@ class ScenarioRun(Base):
     """
     __tablename__ = "scenario_runs"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     suite_run_id: Mapped[int] = mapped_column(ForeignKey("suite_runs.id"), nullable=False)
     scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id"), nullable=False)
     suite_id: Mapped[int] = mapped_column(ForeignKey("suites.id"), nullable=False)

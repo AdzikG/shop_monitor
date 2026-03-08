@@ -481,51 +481,17 @@ const FLAG_DATA    = {
     {% endfor %}
 };
 
-// ── PIN helper ───────────────────────────────────────────────────────────────
-async function ensurePin() {
-    const check = await fetch('/auth/check-session').then(r => r.json()).catch(() => ({ok: false}));
-    if (check.ok) return true;
-    return new Promise(resolve => {
-        openPinModal({
-            _pinVerified: false,
-            submit() { resolve(true); },
-        });
-        // Monkey-patch: po zatwierdzeniu PIN resolve(true)
-        const origClose = window.closePinModal;
-        const origSubmit = window.submitPin;
-        window.submitPin = async function() {
-            const pin = document.getElementById('pin-input').value.trim();
-            if (!pin) return;
-            const res = await fetch('/auth/verify-pin', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `pin=${encodeURIComponent(pin)}`
-            });
-            const data = await res.json();
-            if (data.ok) {
-                closePinModal();
-                window.submitPin = origSubmit;
-                resolve(true);
-            } else {
-                document.getElementById('pin-error').textContent = data.error || 'Nieprawidłowy PIN';
-                document.getElementById('pin-input').value = '';
-                document.getElementById('pin-input').focus();
-            }
-        };
-        document.getElementById('pin-input').addEventListener('keydown', function handler(e) {
-            if (e.key === 'Enter') { e.stopImmediatePropagation(); window.submitPin(); }
-        }, {once: true});
-    });
-}
-
 async function inlineFetch(url, body) {
-    const ok = await ensurePin();
-    if (!ok) return;
-    return fetch(url, {
+    const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
+    if (res.status === 401 || res.status === 403) {
+        window.location.href = '/auth/login';
+        return null;
+    }
+    return res;
 }
 
 // ── Inline save field ─────────────────────────────────────────────────────────
@@ -536,9 +502,9 @@ async function saveField(el) {
 
     el.classList.add('saving');
     try {
-        await inlineFetch(`/scenarios/${id}/inline`, { field, value });
+        const res = await inlineFetch(`/scenarios/${id}/inline`, { field, value });
         el.classList.remove('saving');
-        flashSaved(el.closest('td'));
+        if (res) flashSaved(el.closest('td'));
     } catch(e) {
         el.classList.remove('saving');
     }

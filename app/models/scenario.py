@@ -17,7 +17,7 @@ class Scenario(Base):
     """
     __tablename__ = "scenarios"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     # Podstawowe
     name: Mapped[str] = mapped_column(String(255), nullable=False)

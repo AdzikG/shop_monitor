@@ -29,7 +29,7 @@ class SuiteRun(Base):
     """
     __tablename__ = "suite_runs"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     suite_id: Mapped[int] = mapped_column(ForeignKey("suites.id"), nullable=False)
     environment_id: Mapped[int] = mapped_column(ForeignKey("environments.id"), nullable=False)
     
