@@ -118,9 +118,8 @@ class ScenarioExecutor:
         """Przekazuje alerty z wyniku runnera do AlertEngine."""
         for alert in result.alerts:
             self.alert_engine.add_alert(
-                business_rule=alert.business_rule,
+                rule=alert.business_rule,
                 description=alert.description,
-                alert_type=alert.alert_type,
             )
 
     async def _execute(self, context: ScenarioContext):

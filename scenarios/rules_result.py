@@ -6,7 +6,6 @@ from typing import Optional
 class AlertResult:
     business_rule: str
     description: str = ""
-    alert_type: str = "bug"
 
 
 @dataclass
