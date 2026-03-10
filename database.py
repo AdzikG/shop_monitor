@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
-import os
+from core.config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./shop_monitor.db")
+DATABASE_URL = settings.database_url
 
 connect_args = {"check_same_thread": False, "timeout": 30} if DATABASE_URL.startswith("sqlite") else {}
 
