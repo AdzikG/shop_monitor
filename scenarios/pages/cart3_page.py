@@ -33,22 +33,22 @@ class Cart3Page(BasePage):
 
         await self._fill_address()
 
-        if self.context.is_order:
+        if self.scenario_context.is_order:
             await self.sloc(self.Nav.BTN_NEXT).click()
             await self.wait_for_navigation()
 
         postal = await self.get_text(self.Address.FIELD_POSTAL)
         return Cart3Data(
-            postal_code=postal or self.context.postal_code,
+            postal_code=postal or self.scenario_context.postal_code,
             is_company=instructions.get('fill_company_fields', False),
         )
 
     # ── Sekcja: adres ─────────────────────────────────────────────────────────
 
     async def _fill_address(self):
-        if self.context.postal_code:
+        if self.scenario_context.postal_code:
             if await self.is_visible(self.Address.FIELD_POSTAL):
-                await self.safe_fill(self.Address.FIELD_POSTAL, self.context.postal_code)
+                await self.safe_fill(self.Address.FIELD_POSTAL, self.scenario_context.postal_code)
 
     # ── Sekcja: faktura firmowa ───────────────────────────────────────────────
 

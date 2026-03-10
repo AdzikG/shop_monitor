@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from playwright.async_api import Page
-from scenarios.context import ScenarioContext
+from scenarios.contexts.scenario_context import ScenarioContext
+from scenarios.contexts.suite_context import SuiteContext
+from scenarios.contexts.suite_context_mixin import SuiteContextMixin
 import logging
 import re
 
@@ -30,10 +32,11 @@ class Sel:
         return self.desktop
 
 
-class BasePage:
-    def __init__(self, page: Page, context: ScenarioContext):
+class BasePage(SuiteContextMixin):
+    def __init__(self, page: Page, scenario_context: ScenarioContext, suite_context: SuiteContext | None = None):
         self.page = page
-        self.context = context
+        self.scenario_context = scenario_context
+        self.suite_context = suite_context
 
     # ── Lokator ───────────────────────────────────────────────────────────────
 
@@ -76,11 +79,11 @@ class BasePage:
 
     @property
     def is_mobile(self) -> bool:
-        return self.context.is_mobile
+        return self.scenario_context.is_mobile
 
     @property
     def is_desktop(self) -> bool:
-        return self.context.is_desktop
+        return self.scenario_context.is_desktop
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 

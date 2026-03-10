@@ -1,5 +1,6 @@
 from scenarios.pages.base_page import BasePage, Sel
 from scenarios.run_data import Cart0Data
+from core.config import TestAccountName
 
 
 # ── Cart0Page — podsumowanie koszyka ─────────────────────────────────────────
@@ -43,7 +44,7 @@ class Cart0Page(BasePage):
         total = await self.get_decimal(self.Cart.TOTAL_PRICE)
         count = await self.sloc(self.Cart.ITEM).count()
 
-        if self.context.is_order:
+        if self.scenario_context.is_order:
             await self.sloc(self.Cart.BTN_NEXT).click()
             await self.wait_for_navigation()
 
