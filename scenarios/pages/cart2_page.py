@@ -27,7 +27,7 @@ class Cart2Page(BasePage):
         selected  = await self._select_payment()
         price     = await self.get_decimal(self.Payment.PRICE)
 
-        if self.context.is_order and selected:
+        if self.scenario_context.is_order and selected:
             await self.sloc(self.Nav.BTN_NEXT).click()
             await self.wait_for_navigation()
 
@@ -46,12 +46,12 @@ class Cart2Page(BasePage):
         return names
 
     async def _select_payment(self) -> str | None:
-        if not self.context.payment_name:
+        if not self.scenario_context.payment_name:
             return None
         option = self.page.locator('.payment-option').filter(
-            has_text=self.context.payment_name
+            has_text=self.scenario_context.payment_name
         )
         if await option.count() > 0:
             await option.first.click()
-            return self.context.payment_name
+            return self.scenario_context.payment_name
         return None

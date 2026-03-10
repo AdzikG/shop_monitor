@@ -18,6 +18,8 @@ from app.models.alert_group import (
 )
 from app.models.alert import Alert
 from scenarios.scenario_executor import ScenarioExecutor
+from scenarios.contexts.suite_context import SuiteContext
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -63,48 +65,58 @@ class SuiteExecutor:
         logger.info(f"Scenariusze: {len(self.scenarios)} | Workers: {self.workers}")
         logger.info(f"{'='*60}\n")
 
+        # ── SuiteContext — inicjalizacja przed scenariuszami ─────────────────
+        suite_context = await self._init_suite_context()
+
         semaphore = asyncio.Semaphore(self.workers)
 
-        async def run_with_limit(scenario):
-            async with semaphore:
-                db_session = Session(bind=self.db.bind)
-                try:
-                    executor = ScenarioExecutor(
-                        scenario_db=scenario,
-                        environment_db=self.environment,
-                        suite_run_id=suite_run.id,
-                        suite_id=self.suite.id,
-                        db=db_session,
-                        headless=self.headless,
-                        max_retries=self.max_retries,
-                    )
-                    run = await executor.run()
+        try:
+            async def run_with_limit(scenario):
+                async with semaphore:
+                    db_session = Session(bind=self.db.bind)
+                    try:
+                        executor = ScenarioExecutor(
+                            scenario_db=scenario,
+                            environment_db=self.environment,
+                            suite_run_id=suite_run.id,
+                            suite_id=self.suite.id,
+                            db=db_session,
+                            headless=self.headless,
+                            max_retries=self.max_retries,
+                            suite_context=suite_context,
+                        )
+                        run = await executor.run()
 
-                    result = {
-                        'scenario_id': run.scenario_id,
-                        'status': run.status.value,
-                        'alerts': []
-                    }
+                        result = {
+                            'scenario_id': run.scenario_id,
+                            'status': run.status.value,
+                            'alerts': []
+                        }
 
-                    for alert in run.alerts:
-                        if alert.is_counted:
-                            result['alerts'].append({
-                                'business_rule': alert.business_rule,
-                                'alert_type': alert.alert_type,
-                                'title': alert.title,
-                            })
+                        for alert in run.alerts:
+                            if alert.is_counted:
+                                result['alerts'].append({
+                                    'business_rule': alert.business_rule,
+                                    'alert_type': alert.alert_type,
+                                    'title': alert.title,
+                                })
 
-                    return result
+                        return result
 
-                except Exception as e:
-                    logger.error(f"Blad w scenariuszu {scenario.name}: {e}")
-                    self._write_raw_traceback(scenario.name, e)
-                    return {'scenario_id': scenario.id, 'status': 'failed', 'alerts': []}
-                finally:
-                    db_session.close()
+                    except Exception as e:
+                        logger.error(f"Blad w scenariuszu {scenario.name}: {e}")
+                        self._write_raw_traceback(scenario.name, e)
+                        return {'scenario_id': scenario.id, 'status': 'failed', 'alerts': []}
+                    finally:
+                        db_session.close()
 
-        tasks = [run_with_limit(s) for s in self.scenarios]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+            tasks = [run_with_limit(s) for s in self.scenarios]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        finally:
+            # ── SuiteContext — zawsze sprzątamy po suite ─────────────────────
+            if suite_context:
+                await suite_context.teardown()
 
         for i, result in enumerate(results):
             if isinstance(result, Exception):
@@ -118,6 +130,27 @@ class SuiteExecutor:
             self.log_handler.close()
 
         return suite_run
+
+    async def _init_suite_context(self) -> SuiteContext | None:
+        """
+        Inicjalizuje SuiteContext przed startem scenariuszy.
+        Zawsze ładuje dane z bazy (Dictionary).
+        Endpointy API czyta z settings (zmienne środowiskowe / .env).
+        """
+        try:
+            api_endpoints = settings.build_api_endpoints()
+            suite_context = await SuiteContext.initialize(
+                db=self.db,
+                api_endpoints=api_endpoints,
+            )
+            logger.info(
+                f"[SuiteExecutor] SuiteContext gotowy"
+                f" (endpointy: {list(api_endpoints.keys()) or 'brak'})"
+            )
+            return suite_context
+        except Exception as e:
+            logger.error(f"[SuiteExecutor] Błąd inicjalizacji SuiteContext: {e}")
+            return None
 
     def _write_raw_traceback(self, scenario_name: str, exception: Exception):
         if not self.log_file:

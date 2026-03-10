@@ -35,7 +35,7 @@ class Cart4Page(BasePage):
         payment_name   = await self.get_text(self.Summary.PAYMENT_NAME)
 
         order_number = None
-        if self.context.is_order:
+        if self.scenario_context.is_order:
             await self._before_order()
             await self.sloc(self.Nav.BTN_ORDER).click()
             await self.wait_for_navigation()

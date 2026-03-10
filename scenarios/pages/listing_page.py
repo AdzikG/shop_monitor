@@ -17,11 +17,11 @@ class ListingPage(BasePage):
 
     async def execute(self, instructions: dict) -> ProductData:
         forced = instructions.get('forced_listing_url')
-        url = forced if forced else random.choice(self.context.listing_urls)
+        url = forced if forced else random.choice(self.scenario_context.listing_urls)
 
         # Jeśli URL jest relatywny — złącz z base URL środowiska
         if not url.startswith('http'):
-            url = self.context.environment_url.rstrip('/') + url
+            url = self.scenario_context.environment_url.rstrip('/') + url
 
         self.log(f"Nawiguję do: {url}")
         await self.page.goto(url)

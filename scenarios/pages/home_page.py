@@ -15,7 +15,7 @@ class HomePage(BasePage):
         BTN_ACCEPT = Sel(desktop=('role', 'button', {'name': 'Akceptuję'}))
 
     async def execute(self, instructions: dict) -> HomeData:
-        await self.page.goto(self.context.environment_url)
+        await self.page.goto(self.scenario_context.environment_url)
         await self.wait_for_navigation()
         await self._accept_cookies()
 

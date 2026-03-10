@@ -1,20 +1,19 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-import os
 import sys
+import os
 
 # Dodaj glowny katalog projektu do path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Importuj wszystkie modele — Alembic musi je widziec zeby wykryc zmiany
 from app.models import Base
+from core.config import settings
 
 config = context.config
 
-# Nadpisz URL z zmiennej srodowiskowej jesli ustawiona
-database_url = os.getenv("DATABASE_URL", "sqlite:///./shop_monitor.db")
-config.set_main_option("sqlalchemy.url", database_url)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

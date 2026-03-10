@@ -48,7 +48,7 @@ class Cart1Page(BasePage):
         cutoff = await self.get_text(self.Delivery.CUTOFF_TIME)
         price  = await self.get_decimal(self.Delivery.PRICE)
 
-        if self.context.is_order and selected:
+        if self.scenario_context.is_order and selected:
             await self.sloc(self.Nav.BTN_NEXT).click()
             await self.wait_for_navigation()
 
@@ -71,14 +71,14 @@ class Cart1Page(BasePage):
         return names
 
     async def _select_delivery(self) -> str | None:
-        if not self.context.delivery_name:
+        if not self.scenario_context.delivery_name:
             return None
         option = self.page.locator('.delivery-option').filter(
-            has_text=self.context.delivery_name
+            has_text=self.scenario_context.delivery_name
         )
         if await option.count() > 0:
             await option.first.click()
-            return self.context.delivery_name
+            return self.scenario_context.delivery_name
         return None
 
     # ── Sekcja: post-wybór ────────────────────────────────────────────────────
@@ -92,9 +92,9 @@ class Cart1Page(BasePage):
         postal_code_filled = False
 
         if postal_code_required:
-            if self.context.postal_code:
-                self.log(f"Pole kodu pocztowego widoczne — wpisuję {self.context.postal_code}")
-                await self.safe_fill(self.Address.FIELD_POSTAL, self.context.postal_code)
+            if self.scenario_context.postal_code:
+                self.log(f"Pole kodu pocztowego widoczne — wpisuję {self.scenario_context.postal_code}")
+                await self.safe_fill(self.Address.FIELD_POSTAL, self.scenario_context.postal_code)
                 await self.wait_for_navigation()
                 postal_code_filled = True
             else:

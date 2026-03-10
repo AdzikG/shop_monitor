@@ -20,19 +20,19 @@ class Cart4Rules(BaseRules):
                 )
 
         # Weryfikacja dostawy w podsumowaniu vs wybrana w cart1
-        if self.context.delivery_name and cart4.delivery_name:
-            if self.context.delivery_name not in cart4.delivery_name:
+        if self.scenario_context.delivery_name and cart4.delivery_name:
+            if self.scenario_context.delivery_name not in cart4.delivery_name:
                 self.add_alert(
                     'CART4_DELIVERY_MISMATCH',
-                    f'Dostawa w podsumowaniu "{cart4.delivery_name}" != "{self.context.delivery_name}"',
+                    f'Dostawa w podsumowaniu "{cart4.delivery_name}" != "{self.scenario_context.delivery_name}"',
                 )
 
         # Weryfikacja płatności w podsumowaniu vs wybrana w cart2
-        if self.context.payment_name and cart4.payment_name:
-            if self.context.payment_name not in cart4.payment_name:
+        if self.scenario_context.payment_name and cart4.payment_name:
+            if self.scenario_context.payment_name not in cart4.payment_name:
                 self.add_alert(
                     'CART4_PAYMENT_MISMATCH',
-                    f'Płatność w podsumowaniu "{cart4.payment_name}" != "{self.context.payment_name}"',
+                    f'Płatność w podsumowaniu "{cart4.payment_name}" != "{self.scenario_context.payment_name}"',
                 )
 
         return self.ok()
