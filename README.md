@@ -63,10 +63,17 @@ Domyślnie aplikacja używa SQLite. Aby przełączyć na MySQL:
 CREATE DATABASE shop_monitor CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-**2. Dodaj `DATABASE_URL` do pliku `.env`:**
+**2. Dodaj do pliku `.env`:**
 
 ```
 DATABASE_URL=mysql+pymysql://user:password@localhost:3306/shop_monitor
+DATABASE_URL=sqlite:///./shop_monitor.db
+APP_HOST=0.0.0.0
+APP_PORT=8000
+# API_CONFIG_URL=https://api.example.com/config
+# API_CONFIG_TOKEN=
+TEST_ACCOUNT_PROD_ADMIN_LOGIN=jan@prod.example.com
+TEST_ACCOUNT_PROD_ADMIN_PASS=haslo123
 ```
 
 **3. Zaktualizuj `alembic.ini` (linia `sqlalchemy.url`):**
