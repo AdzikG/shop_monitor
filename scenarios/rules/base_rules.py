@@ -1,11 +1,14 @@
-from scenarios.context import ScenarioContext
+from scenarios.contexts.scenario_context import ScenarioContext
+from scenarios.contexts.suite_context import SuiteContext
+from scenarios.contexts.suite_context_mixin import SuiteContextMixin
 from scenarios.run_data import RunData
 from scenarios.rules_result import AlertResult, RulesResult
 
 
-class BaseRules:
-    def __init__(self, context: ScenarioContext):
-        self.context = context
+class BaseRules(SuiteContextMixin):
+    def __init__(self, scenario_context: ScenarioContext, suite_context: SuiteContext | None = None):
+        self.scenario_context = scenario_context
+        self.suite_context = suite_context
         self._alerts: list[AlertResult] = []
 
     def check(self, run_data: RunData) -> RulesResult:

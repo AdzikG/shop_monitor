@@ -18,10 +18,10 @@ class Cart0Rules(BaseRules):
             self.add_alert('CART0_NO_PRICE', 'Brak ceny w koszyku')
 
         # Instrukcje dla kolejnych etapów — logika biznesowa decyduje co przekazać
-        if self.context.delivery_name in ('Kurier', 'Kurier jutro', 'Kurier 48h'):
+        if self.scenario_context.delivery_name in ('Kurier', 'Kurier jutro', 'Kurier 48h'):
             instructions['requires_postal_code'] = True
 
-        if self.context.flag('company_address'):
+        if self.scenario_context.flag('company_address'):
             instructions['fill_company_fields'] = True
 
         return self.ok(instructions=instructions)

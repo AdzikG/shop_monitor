@@ -10,18 +10,18 @@ class Cart1Rules(BaseRules):
         cart1 = run_data.cart1
 
         # Oczekiwana dostawa niedostępna na liście
-        if self.context.delivery_name and self.context.delivery_name not in cart1.available_options:
+        if self.scenario_context.delivery_name and self.scenario_context.delivery_name not in cart1.available_options:
             self.add_alert(
                 'CART1_DELIVERY_UNAVAILABLE',
-                f'Dostawa "{self.context.delivery_name}" niedostępna. Dostępne: {", ".join(cart1.available_options)}',
+                f'Dostawa "{self.scenario_context.delivery_name}" niedostępna. Dostępne: {", ".join(cart1.available_options)}',
             )
-            return self.stop(reason=f'Brak dostawy "{self.context.delivery_name}"')
+            return self.stop(reason=f'Brak dostawy "{self.scenario_context.delivery_name}"')
 
         # Dostawa była na liście ale nie udało się jej wybrać
-        if self.context.delivery_name and not cart1.selected:
+        if self.scenario_context.delivery_name and not cart1.selected:
             self.add_alert(
                 'CART1_DELIVERY_NOT_SELECTED',
-                f'Nie można wybrać dostawy "{self.context.delivery_name}"',
+                f'Nie można wybrać dostawy "{self.scenario_context.delivery_name}"',
             )
             return self.stop(reason='Nie można wybrać dostawy')
 
@@ -31,11 +31,11 @@ class Cart1Rules(BaseRules):
             return self.stop(reason='Brak kodu pocztowego')
 
         # Godzina graniczna niezgodna z oczekiwaną — alert ale kontynuujemy
-        if self.context.delivery_cutoff and cart1.cutoff_time:
-            if cart1.cutoff_time != self.context.delivery_cutoff:
+        if self.scenario_context.delivery_cutoff and cart1.cutoff_time:
+            if cart1.cutoff_time != self.scenario_context.delivery_cutoff:
                 self.add_alert(
                     'CART1_CUTOFF_MISMATCH',
-                    f'Godzina graniczna: oczekiwano {self.context.delivery_cutoff}, jest {cart1.cutoff_time}',
+                    f'Godzina graniczna: oczekiwano {self.scenario_context.delivery_cutoff}, jest {cart1.cutoff_time}',
                 )
 
         return self.ok()

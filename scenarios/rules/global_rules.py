@@ -18,7 +18,7 @@ class GlobalRules(BaseRules):
                     )
 
         # Gwarancja widoczna w podsumowaniu
-        if self.context.guarantee and run_data.cart4:
+        if self.scenario_context.guarantee and run_data.cart4:
             # TODO: gdy znamy selektory
             pass
 
