@@ -18,7 +18,8 @@ from app.models.run import ScenarioRun, RunStatus
 from app.models.scenario import Scenario
 from app.models.environment import Environment
 from core.alert_engine import AlertEngine
-from scenarios.context import ScenarioContext
+from scenarios.contexts.scenario_context import ScenarioContext
+from scenarios.contexts.suite_context import SuiteContext
 from scenarios.shop_runner import ShopRunner, ShopRunResult
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class ScenarioExecutor:
         db: Session,
         headless: bool = True,
         max_retries: int = 0,
+        suite_context: SuiteContext | None = None,
     ):
         self.scenario_db = scenario_db
         self.environment_db = environment_db
@@ -44,13 +46,14 @@ class ScenarioExecutor:
         self.db = db
         self.headless = headless
         self.max_retries = max_retries
+        self.suite_context = suite_context
         self.scenario_run = None
         self.alert_engine = None
 
     async def run(self) -> ScenarioRun:
         """Uruchamia scenariusz i zwraca ScenarioRun z wynikami."""
 
-        context = ScenarioContext.from_db(self.scenario_db, self.environment_db)
+        scenario_context = ScenarioContext.from_db(self.scenario_db, self.environment_db)
 
         self.scenario_run = ScenarioRun(
             suite_id=self.suite_id,
@@ -74,7 +77,7 @@ class ScenarioExecutor:
         logger.info(f"[RUN #{self.scenario_run.id}] Start: {self.scenario_db.name}")
 
         try:
-            await self._execute(context)
+            await self._execute(scenario_context)
 
             if self.alert_engine.counted_alerts() > 0:
                 self.scenario_run.status = RunStatus.FAILED
@@ -122,7 +125,7 @@ class ScenarioExecutor:
                 description=alert.description,
             )
 
-    async def _execute(self, context: ScenarioContext):
+    async def _execute(self, scenario_context: ScenarioContext):
         """Uruchamia Playwright i przekazuje sterowanie do ShopRunner."""
 
         async with async_playwright() as p:
@@ -131,7 +134,7 @@ class ScenarioExecutor:
                 args=["--no-sandbox", "--disable-dev-shm-usage"],
             )
             browser_context = await browser.new_context(
-                viewport={'width': 390, 'height': 844} if context.is_mobile else {'width': 1280, 'height': 720},
+                viewport={'width': 390, 'height': 844} if scenario_context.is_mobile else {'width': 1280, 'height': 720},
             )
             page = await browser_context.new_page()
 
@@ -142,10 +145,11 @@ class ScenarioExecutor:
 
                 runner = ShopRunner(
                     page=page,
-                    context=context,
+                    scenario_context=scenario_context,
                     screenshot_dir=screenshot_dir,
                     api_error_exclusions=self._load_exclusions(),
                     max_retries=self.max_retries,
+                    suite_context=self.suite_context,
                 )
                 result = await runner.run()
 

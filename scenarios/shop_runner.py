@@ -11,7 +11,8 @@ from dataclasses import dataclass, field
 
 from playwright.async_api import Page
 
-from scenarios.context import ScenarioContext
+from scenarios.contexts.scenario_context import ScenarioContext
+from scenarios.contexts.suite_context import SuiteContext
 from scenarios.run_data import RunData
 from scenarios.rules_result import AlertResult, RulesResult
 
@@ -54,9 +55,10 @@ class StopTest(Exception):
 
 
 class ShopRunner:
-    def __init__(self, page: Page, context: ScenarioContext, screenshot_dir: str | None = None, api_error_exclusions: list[dict] | None = None, max_retries: int = 0):
+    def __init__(self, page: Page, scenario_context: ScenarioContext, screenshot_dir: str | None = None, api_error_exclusions: list[dict] | None = None, max_retries: int = 0, suite_context: SuiteContext | None = None):
         self.page = page
-        self.context = context
+        self.scenario_context = scenario_context
+        self.suite_context = suite_context
         self.run_data = RunData()
         self.alerts: list[AlertResult] = []
         # Instrukcje akumulowane między etapami
@@ -103,7 +105,7 @@ class ShopRunner:
         if forced_listing_url:
             self.instructions['forced_listing_url'] = forced_listing_url
         logger.info(
-            f"[{self.context.scenario_name}] "
+            f"[{self.scenario_context.scenario_name}] "
             f"Retry {attempt}/{self.max_retries}"
         )
 
@@ -159,27 +161,27 @@ class ShopRunner:
                 await self._run_listing()
                 await self._run_cart0()
 
-                if self.context.is_order:
+                if self.scenario_context.is_order:
                     await self._run_cart1()
                     await self._run_cart2()
                     await self._run_cart3()
                     await self._run_cart4()
 
                 # Global rules — mają dostęp do danych ze wszystkich etapów
-                global_result = GlobalRules(self.context).check(self.run_data)
+                global_result = GlobalRules(self.scenario_context, self.suite_context).check(self.run_data)
                 self._process_result(global_result, 'global')
 
             except StopTest as e:
                 level = logger.info if e.expected else logger.warning
                 level(
-                    f"[{self.context.scenario_name}] "
+                    f"[{self.scenario_context.scenario_name}] "
                     f"Test {'zatrzymany' if e.expected else 'przerwany'} na '{e.stage}': {e.reason}"
                 )
                 return self._make_result(success=e.expected, stopped_at=e.stage)
 
             except Exception as e:
                 logger.exception(
-                    f"[{self.context.scenario_name}] "
+                    f"[{self.scenario_context.scenario_name}] "
                     f"Nieoczekiwany błąd (próba {attempt + 1}): {e}"
                 )
                 if attempt < self.max_retries:
@@ -199,46 +201,46 @@ class ShopRunner:
         self._current_stage = 'HomeScreen'
         self.run_data.home = await self._get_page(HomePage).execute(self.instructions)
         await self._screenshot('home')
-        self._process_result(HomeRules(self.context).check(self.run_data), 'home')
+        self._process_result(HomeRules(self.scenario_context, self.suite_context).check(self.run_data), 'home')
 
     async def _run_listing(self):
         self._current_stage = 'Listing'
         self.run_data.listing = await self._get_page(ListingPage).execute(self.instructions)
         await self._screenshot('listing')
-        self._process_result(ListingRules(self.context).check(self.run_data), 'listing')
+        self._process_result(ListingRules(self.scenario_context, self.suite_context).check(self.run_data), 'listing')
 
     async def _run_cart0(self):
         self.run_data.cart0 = await self._get_page(Cart0Page).execute(self.instructions)
         await self._screenshot('cart0')
-        self._process_result(Cart0Rules(self.context).check(self.run_data), 'cart0')
+        self._process_result(Cart0Rules(self.scenario_context, self.suite_context).check(self.run_data), 'cart0')
 
     async def _run_cart1(self):
         self.run_data.cart1 = await self._get_page(Cart1Page).execute(self.instructions)
         await self._screenshot('cart1')
-        self._process_result(Cart1Rules(self.context).check(self.run_data), 'cart1')
+        self._process_result(Cart1Rules(self.scenario_context, self.suite_context).check(self.run_data), 'cart1')
 
-        if self.context.flag('stop_at_cart1'):
+        if self.scenario_context.flag('stop_at_cart1'):
             raise StopTest('cart1', 'Oczekiwane zatrzymanie na cart1', expected=True)
 
     async def _run_cart2(self):
         self.run_data.cart2 = await self._get_page(Cart2Page).execute(self.instructions)
         await self._screenshot('cart2')
-        self._process_result(Cart2Rules(self.context).check(self.run_data), 'cart2')
+        self._process_result(Cart2Rules(self.scenario_context, self.suite_context).check(self.run_data), 'cart2')
 
-        if self.context.flag('stop_at_cart2'):
+        if self.scenario_context.flag('stop_at_cart2'):
             raise StopTest('cart2', 'Oczekiwane zatrzymanie na cart2', expected=True)
 
     async def _run_cart3(self):
         self.run_data.cart3 = await self._get_page(Cart3Page).execute(self.instructions)
         await self._screenshot('cart3')
-        self._process_result(Cart3Rules(self.context).check(self.run_data), 'cart3')
+        self._process_result(Cart3Rules(self.scenario_context, self.suite_context).check(self.run_data), 'cart3')
 
-        if self.context.flag('stop_at_cart3'):
+        if self.scenario_context.flag('stop_at_cart3'):
             raise StopTest('cart3', 'Oczekiwane zatrzymanie na cart3', expected=True)
 
     async def _run_cart4(self):
         # Flaga should_not_complete — dotarcie tutaj jest błędem
-        if self.context.flag('should_not_complete'):
+        if self.scenario_context.flag('should_not_complete'):
             raise StopTest(
                 stage='cart3',
                 reason='Scenariusz nie powinien dotrzeć do podsumowania',
@@ -247,13 +249,13 @@ class ShopRunner:
 
         self.run_data.cart4 = await self._get_page(Cart4Page).execute(self.instructions)
         await self._screenshot('cart4')
-        self._process_result(Cart4Rules(self.context).check(self.run_data), 'cart4')
+        self._process_result(Cart4Rules(self.scenario_context, self.suite_context).check(self.run_data), 'cart4')
 
     def _get_page(self, desktop_cls, mobile_cls=None):
         """Zwraca odpowiednią klasę page dla desktop/mobile."""
-        if self.context.is_mobile and mobile_cls:
-            return mobile_cls(self.page, self.context)
-        return desktop_cls(self.page, self.context)
+        if self.scenario_context.is_mobile and mobile_cls:
+            return mobile_cls(self.page, self.scenario_context, self.suite_context)
+        return desktop_cls(self.page, self.scenario_context, self.suite_context)
 
     def _process_result(self, result: RulesResult, stage: str):
         """
